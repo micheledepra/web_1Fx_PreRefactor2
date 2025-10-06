@@ -1,0 +1,460 @@
+/* ===== RISK COMBAT SYSTEM STYLING ===== */
+
+/* Combat Territory States */
+.territory.combat-attacker {
+    stroke: #ff4444 !important;
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 8px rgba(255, 68, 68, 0.6));
+}
+
+.territory.combat-defender {
+    stroke: #4444ff !important;
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 8px rgba(68, 68, 255, 0.6));
+}
+
+.territory.combat-valid-target {
+    stroke: #ffaa00 !important;
+    stroke-width: 3px !important;
+    stroke-dasharray: 5,5;
+    animation: validTargetPulse 1.5s infinite;
+}
+
+@keyframes validTargetPulse {
+    0%, 100% { 
+        opacity: 1;
+        stroke-width: 3px;
+    }
+    50% { 
+        opacity: 0.7;
+        stroke-width: 4px;
+    }
+}
+
+/* Combat Panel Styling */
+.combat-panel {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    border: 2px solid #3498db;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.combat-panel.active {
+    border-color: #e74c3c;
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.combat-header {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ecf0f1;
+}
+
+.combat-territories {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
+.combat-territory {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.combat-territory.attacker {
+    border-color: #e74c3c;
+}
+
+.combat-territory.defender {
+    border-color: #3498db;
+}
+
+.combat-territory-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.combat-territory-armies {
+    font-size: 20px;
+    color: #f39c12;
+    font-weight: bold;
+}
+
+/* Dice Display */
+.dice-section {
+    margin: 20px 0;
+}
+
+.dice-section-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.dice-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.die {
+    width: 40px;
+    height: 40px;
+    background: white;
+    color: black;
+    border: 2px solid #333;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.die.attacker {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    border-color: #c44569;
+}
+
+.die.defender {
+    background: linear-gradient(135deg, #4834d4, #686de0);
+    color: white;
+    border-color: #30336b;
+}
+
+.die.winner {
+    transform: scale(1.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Dice Selection Controls */
+.dice-selection {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.dice-selection-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.dice-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.dice-button {
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 40px;
+}
+
+.dice-button:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.dice-button:active {
+    transform: translateY(0);
+}
+
+.dice-button:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Battle Results */
+.battle-results {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.battle-round {
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #f39c12;
+}
+
+.battle-casualties {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.casualty-report {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 0 5px;
+}
+
+.casualty-report.attacker {
+    background: rgba(231, 76, 60, 0.2);
+    border: 1px solid #e74c3c;
+}
+
+.casualty-report.defender {
+    background: rgba(52, 152, 219, 0.2);
+    border: 1px solid #3498db;
+}
+
+.remaining-armies {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #bdc3c7;
+}
+
+/* Combat Action Buttons */
+.combat-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.combat-action-btn {
+    flex: 1;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.combat-action-btn:hover {
+    background: #219a52;
+    transform: translateY(-2px);
+}
+
+.combat-action-btn.secondary {
+    background: #95a5a6;
+}
+
+.combat-action-btn.secondary:hover {
+    background: #7f8c8d;
+}
+
+.combat-action-btn.danger {
+    background: #e74c3c;
+}
+
+.combat-action-btn.danger:hover {
+    background: #c0392b;
+}
+
+.combat-action-btn:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Conquest Panel */
+.conquest-panel {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    border: 2px solid #d68910;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    text-align: center;
+    animation: conquestGlow 2s infinite alternate;
+}
+
+@keyframes conquestGlow {
+    0% { box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4); }
+    100% { box-shadow: 0 6px 25px rgba(243, 156, 18, 0.8); }
+}
+
+.conquest-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.army-transfer-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.army-transfer-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.army-slider {
+    flex: 1;
+    max-width: 200px;
+}
+
+.army-count-display {
+    background: white;
+    color: #2c3e50;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 18px;
+    font-weight: bold;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Combat History */
+.combat-history {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 15px;
+}
+
+.combat-history-item {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+}
+
+.combat-history-item:last-child {
+    border-bottom: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .combat-territories {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .dice-container {
+        flex-wrap: wrap;
+    }
+    
+    .combat-actions {
+        flex-direction: column;
+    }
+    
+    .battle-casualties {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .army-transfer-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Animation Classes */
+.combat-shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.combat-flash {
+    animation: flash 0.3s ease-in-out;
+}
+
+@keyframes flash {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(255, 255, 255, 0.3); }
+    100% { background-color: transparent; }
+}
+
+/* Combat Phase Indicator */
+.phase-indicator.combat-active {
+    border-color: #e74c3c;
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1));
+}
+
+.phase-indicator.combat-active .phase-name {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+/* Territory Hover Effects During Combat */
+.combat-phase .territory:hover {
+    cursor: crosshair;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+}
+
+.combat-phase .territory.combat-valid-target:hover {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 0 12px rgba(255, 170, 0, 0.8));
+}
+
+/* Combat Status Messages */
+.combat-status {
+    background: rgba(52, 73, 94, 0.9);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+    text-align: center;
+    font-weight: bold;
+    border-left: 4px solid #3498db;
+}
+
+.combat-status.success {
+    border-left-color: #27ae60;
+    background: rgba(39, 174, 96, 0.2);
+}
+
+.combat-status.warning {
+    border-left-color: #f39c12;
+    background: rgba(243, 156, 18, 0.2);
+}
+
+.combat-status.error {
+    border-left-color: #e74c3c;
+    background: rgba(231, 76, 60, 0.2);
+}

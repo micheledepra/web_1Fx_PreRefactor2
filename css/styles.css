@@ -1,0 +1,434 @@
+/* Game container styles */
+.game-container {
+    display: flex;
+    height: 100vh;
+    background: #34495e;
+}
+
+/* Map styles */
+.map-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #2c3e50;
+}
+
+.territory {
+    cursor: pointer;
+    transition: fill 0.3s, stroke 0.3s;
+}
+
+.territory:hover {
+    filter: brightness(1.2);
+}
+
+.territory.selected {
+    stroke: #fff;
+    stroke-width: 2px;
+}
+
+.territory.valid-target {
+    stroke: #2ecc71;
+    stroke-width: 2px;
+    animation: pulse 1s infinite;
+}
+
+/* UI panel styles */
+.game-ui {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100vh;
+    background: rgba(44, 62, 80, 0.95);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+.game-ui.collapsed {
+    transform: translateX(280px);
+}
+
+.game-ui-content {
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.toggle-ui-btn {
+    position: fixed;
+    top: 10px;
+    right: 290px;
+    padding: 8px;
+    width: 32px;
+    height: 32px;
+    background: #34495e;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.game-ui.collapsed + .toggle-ui-btn {
+    right: 10px;
+}
+
+.game-phase {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #34495e;
+    border-radius: 5px;
+}
+
+.player-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #34495e;
+    border-radius: 5px;
+}
+
+.current-turn-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: -20px -20px 15px -20px;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+.player-turn-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(44, 62, 80, 0.95);
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translate(-50%, -20px);
+    transition: all 0.3s ease;
+}
+
+.player-turn-banner.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.player-color-indicator {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.turn-details {
+    flex: 1;
+}
+
+.current-player {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.current-phase {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.player-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 1.1rem;
+}
+
+.player-stats strong {
+    color: #3498db;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Button styles */
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    background: #3498db;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s;
+}
+
+button:hover:not(:disabled) {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Territory information */
+.territory-info {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    display: none;
+    z-index: 1000;
+}
+
+.troop-counter {
+    position: absolute;
+    color: white;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.8);
+    font-weight: bold;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    font-size: 1.4rem;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    min-width: 32px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.troop-counter:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Battle results display */
+.battle-info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    z-index: 1000;
+    display: none;
+}
+
+#battleResults {
+    font-size: 1.1rem;
+}
+
+#battleResults p {
+    margin: 5px 0;
+}
+
+/* Victory screen */
+.victory-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.victory-modal {
+    background: #2c3e50;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+}
+
+.victory-modal h2 {
+    margin: 0 0 20px 0;
+    font-size: 2rem;
+    color: #f1c40f;
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.modal {
+    background: #2c3e50;
+    padding: 30px;
+    border-radius: 10px;
+    min-width: 300px;
+    color: white;
+}
+
+.modal h3 {
+    margin: 0 0 20px 0;
+    font-size: 1.5rem;
+}
+
+.modal p {
+    margin: 15px 0;
+}
+
+.modal input[type="range"] {
+    width: 100%;
+    margin: 10px 0;
+}
+
+#reinforcement-value {
+    display: block;
+    text-align: center;
+    font-size: 1.2rem;
+    margin: 10px 0;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    flex: 1;
+}
+
+#deploy-btn {
+    background: #27ae60;
+}
+
+#deploy-btn:hover {
+    background: #219a52;
+}
+
+#cancel-btn {
+    background: #e74c3c;
+}
+
+#cancel-btn:hover {
+    background: #c0392b;
+}
+
+/* Dice display styles */
+.die {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    color: #333;
+    border: 2px solid #333;
+    border-radius: 4px;
+    text-align: center;
+    line-height: 20px;
+    font-weight: bold;
+    margin: 0 2px;
+    font-size: 14px;
+}
+
+.dice-rolls {
+    margin: 5px 0;
+}
+
+.dice-group {
+    margin: 10px 0;
+    text-align: center;
+}
+
+.dice-display {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;
+}
+
+/* Attack territory highlighting */
+.highlight-selected-attacker {
+    stroke: #3498db !important;
+    stroke-width: 3px !important;
+    filter: brightness(1.3) !important;
+}
+
+.highlight-selected-target {
+    stroke: #e74c3c !important;
+    stroke-width: 3px !important;
+    filter: brightness(1.3) !important;
+}
+
+.highlight-attackable {
+    stroke: #f39c12 !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 5,5 !important;
+    animation: pulse 2s infinite !important;
+}
+
+.highlight-valid-target {
+    stroke: #e67e22 !important;
+    stroke-width: 2px !important;
+    filter: brightness(1.2) !important;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        stroke-opacity: 1;
+    }
+    50% {
+        stroke-opacity: 0.5;
+    }
+    100% {
+        stroke-opacity: 1;
+    }
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Game Army Rules Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .test-output {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Risk Game Army Rules Test</h1>
+    <p>Open the browser console (F12) to view test results.</p>
+    <div id="output" class="test-output"></div>
+    
+    <script>
+        // Global error handler
+        window.onerror = function(message, source, lineno, colno, error) {
+            document.getElementById('output').innerHTML += `<div class="error">ERROR: ${message} (${source}:${lineno}:${colno})</div>`;
+            console.error("Caught error:", error);
+            return true;
+        };
+        
+        // Console output redirector
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn
+        };
+        
+        console.log = function() {
+            const args = Array.from(arguments);
+            document.getElementById('output').innerHTML += args.join(' ') + '<br>';
+            originalConsole.log.apply(console, args);
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments);
+            document.getElementById('output').innerHTML += `<div class="error">${args.join(' ')}</div>`;
+            originalConsole.error.apply(console, args);
+        };
+    </script>
+    
+    <script src="js/mapData.js"></script>
+    <script src="js/territory-paths.js"></script>
+    <script src="js/GameState.js"></script>
+    <script src="js/test-army-rules.js"></script>
+</body>
+</html>

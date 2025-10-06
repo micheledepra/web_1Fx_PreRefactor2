@@ -1,0 +1,88 @@
+/* Territory Indicators */
+.territory-indicator {
+    position: absolute;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.territory-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.army-indicator {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.army-indicator::before {
+    content: '⚔️';
+    font-size: 10px;
+}
+
+.army-indicator.strong {
+    background: rgba(76, 175, 80, 0.9);
+}
+
+.army-indicator.weak {
+    background: rgba(244, 67, 54, 0.9);
+}
+
+/* Strategic Indicators */
+.strategic-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.strategic-value {
+    position: absolute;
+    background: #2196F3;
+}
+
+.strategic-risk {
+    position: absolute;
+    background: #F44336;
+}
+
+.strategic-opportunity {
+    position: absolute;
+    background: #4CAF50;
+}
+
+/* Border Indicators */
+.territory.border-conflict {
+    stroke: #F44336;
+    stroke-width: 3;
+    stroke-dasharray: 5,5;
+    animation: dash 20s linear infinite;
+}
+
+.territory.border-secure {
+    stroke: #4CAF50;
+    stroke-width: 2;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -1000;
+    }
+}

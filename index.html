@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RISK - Player Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #059ed1;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .registration-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .player-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .player-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .color-selector {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #fff;
+        }
+
+        .color-selector.selected {
+            border-color: #4CAF50;
+            border-width: 3px;
+        }
+
+        .color-selection {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button[type="submit"] {
+            margin-top: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .error {
+            color: red;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .color-selection {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-left: 10px;
+        }
+
+        .color-selector {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .color-selector.selected {
+            border-color: #000;
+            border-width: 3px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="registration-container">
+        <h1>RISK - Player Registration</h1>
+        <form id="playerForm">
+            <div class="form-group">
+                <label for="numPlayers">Number of Players:</label>
+                <select id="numPlayers" name="numPlayers" required>
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4" selected>4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
+            </div>
+            <div class="player-inputs" id="playerInputs">
+                <!-- Player inputs will be generated dynamically -->
+            </div>
+            <button type="submit">Start Game</button>
+        </form>
+        <p class="error" id="errorText"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('playerForm');
+            const playerInputs = document.getElementById('playerInputs');
+            const errorText = document.getElementById('errorText');
+
+            let playerCount = 4;
+            const MIN_PLAYERS = 2;
+
+            const availableColors = [
+                { name: 'Red', value: '#ff4444' },
+                { name: 'Blue', value: '#4444ff' },
+                { name: 'Green', value: '#44ff44' },
+                { name: 'Yellow', value: '#ffff44' },
+                { name: 'Orange', value: '#ff8800' },
+                { name: 'Purple', value: '#ff44ff' }
+            ];
+            const usedColors = new Set();
+
+            function generatePlayerInputs(count) {
+                playerInputs.innerHTML = ''; // Clear existing inputs
+                usedColors.clear();
+                
+                for (let i = 0; i < count; i++) {
+                    const playerInput = document.createElement('div');
+                    playerInput.className = 'player-input';
+                    
+                    // Create name input
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.placeholder = `Player ${i + 1} name`;
+                    nameInput.required = true;
+                    nameInput.value = `Player ${i + 1}`;
+                    playerInput.appendChild(nameInput);
+                    
+                    // Create color selection container
+                    const colorSelection = document.createElement('div');
+                    colorSelection.className = 'color-selection';
+                    colorSelection.dataset.player = i;
+                    
+                    // Select default color for this player
+                    const defaultColor = availableColors[i % availableColors.length];
+                    
+                    // Add color selector buttons
+                    availableColors.forEach(color => {
+                        const colorBtn = document.createElement('div');
+                        colorBtn.className = 'color-selector';
+                        colorBtn.style.backgroundColor = color.value;
+                        colorBtn.dataset.color = color.value;
+                        colorBtn.title = color.name;
+                        
+                        // Mark the default color as selected
+                        if (color.value === defaultColor.value) {
+                            colorBtn.classList.add('selected');
+                        }
+                        
+                        colorSelection.appendChild(colorBtn);
+                    });
+                    
+                    playerInput.appendChild(colorSelection);
+                    playerInputs.appendChild(playerInput);
+                }
+                
+                setupColorSelection();
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inputs = form.querySelectorAll('input[type="text"]');
+                const players = Array.from(inputs).map(input => input.value.trim());
+                const numPlayers = parseInt(document.getElementById('numPlayers').value);
+                
+                // Check for empty names
+                if (players.some(name => name === '')) {
+                    errorText.textContent = 'All player names are required';
+                    return;
+                }
+
+                // Check for duplicate names
+                if (new Set(players).size !== players.length) {
+                    errorText.textContent = 'All player names must be unique';
+                    return;
+                }
+                
+                // Check for color conflicts
+                if (!checkColorConflicts()) {
+                    return;
+                }
+
+                // Collect colors for each player
+                const colors = [];
+                document.querySelectorAll('.color-selection').forEach(colorDiv => {
+                    const selectedColor = colorDiv.querySelector('.color-selector.selected');
+                    colors.push(selectedColor ? selectedColor.dataset.color : availableColors[0].value);
+                });
+                
+                // Store players, colors, and number of players in sessionStorage
+                sessionStorage.setItem('riskPlayers', JSON.stringify(players));
+                sessionStorage.setItem('riskPlayerColors', JSON.stringify(colors));
+                sessionStorage.setItem('numPlayers', numPlayers);
+                
+                // Redirect to the game page (update the path if needed)
+                window.location.href = 'game.html';
+            });
+
+            document.getElementById('numPlayers').addEventListener('change', (e) => {
+                const count = parseInt(e.target.value);
+                generatePlayerInputs(count);
+            });
+
+            function setupColorSelection() {
+                document.querySelectorAll('.color-selector').forEach(colorBtn => {
+                    // Remove any existing event listeners
+                    colorBtn.replaceWith(colorBtn.cloneNode(true));
+                });
+                
+                // Add fresh event listeners
+                document.querySelectorAll('.color-selector').forEach(colorBtn => {
+                    colorBtn.addEventListener('click', (e) => {
+                        const clickedColor = e.target.dataset.color;
+                        const playerDiv = e.target.closest('.color-selection');
+                        const playerIndex = playerDiv.dataset.player;
+                        
+                        // Remove selection from all colors in this player's row
+                        playerDiv.querySelectorAll('.color-selector').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                        
+                        // Select the clicked color
+                        e.target.classList.add('selected');
+                        
+                        // Check for color conflicts and warn user
+                        checkColorConflicts();
+                    });
+                });
+                
+                // Initial color conflict check
+                checkColorConflicts();
+            }
+            
+            function checkColorConflicts() {
+                const selectedColors = new Map();
+                let hasConflict = false;
+                
+                document.querySelectorAll('.color-selection').forEach((colorDiv, playerIndex) => {
+                    const selectedColor = colorDiv.querySelector('.color-selector.selected');
+                    if (selectedColor) {
+                        const color = selectedColor.dataset.color;
+                        if (selectedColors.has(color)) {
+                            hasConflict = true;
+                            errorText.textContent = `Players ${selectedColors.get(color) + 1} and ${playerIndex + 1} have the same color!`;
+                        } else {
+                            selectedColors.set(color, playerIndex);
+                        }
+                    }
+                });
+                
+                if (!hasConflict) {
+                    errorText.textContent = '';
+                }
+                
+                return !hasConflict;
+            }
+
+            // Generate initial player inputs
+            generatePlayerInputs(4); // Default to 4 players
+        });
+    </script>
+</body>
+</html>

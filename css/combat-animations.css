@@ -1,0 +1,231 @@
+/* 
+ * combat-animations.css
+ *
+ * CSS styles for RISK game combat animations:
+ * - Dice rolling with physics effects
+ * - Army removal animations
+ * - Territory conquest color change effects
+ * - Troop movement animations after conquest
+ */
+
+/* Dice Animation Container */
+.dice-animation-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+    background-color: rgba(20, 30, 48, 0.9);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: space-around;
+    z-index: 1000;
+    display: none; /* Hidden by default */
+    overflow: hidden;
+    perspective: 1000px; /* For 3D dice effect */
+}
+
+/* Split container for attacker and defender */
+.dice-animation-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 100%;
+    width: 2px;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.dice-animation-container::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    pointer-events: none;
+}
+
+/* Animated Dice */
+.animated-die {
+    width: 60px;
+    height: 60px;
+    background-color: white;
+    border-radius: 10px;
+    position: relative;
+    transform-style: preserve-3d;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Die Faces */
+.die-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+    font-weight: bold;
+    backface-visibility: hidden;
+}
+
+.die-face-1 { transform: rotateY(0deg); }
+.die-face-2 { transform: rotateY(90deg); }
+.die-face-3 { transform: rotateX(90deg); }
+.die-face-4 { transform: rotateX(-90deg); }
+.die-face-5 { transform: rotateY(-90deg); }
+.die-face-6 { transform: rotateY(180deg); }
+
+.die-face-question {
+    transform: rotateY(0deg);
+    font-size: 32px;
+    color: #666;
+}
+
+/* Die Value Display (after animation) */
+.die-value-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: inherit;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Attacker and Defender Dice Styling */
+.attacker-die {
+    border: 3px solid #3498db;
+}
+
+.defender-die {
+    border: 3px solid #e74c3c;
+}
+
+/* Winner and Loser Dice Effects */
+.winner-die {
+    animation: winner-pulse 1s infinite;
+    box-shadow: 0 0 15px gold;
+    z-index: 2;
+}
+
+.loser-die {
+    opacity: 0.7;
+    transform: scale(0.9);
+    filter: grayscale(0.5);
+}
+
+@keyframes winner-pulse {
+    0% { box-shadow: 0 0 15px gold; }
+    50% { box-shadow: 0 0 25px gold; }
+    100% { box-shadow: 0 0 15px gold; }
+}
+
+/* Army Removal Animation */
+.army-removal-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
+    opacity: 0;
+}
+
+@keyframes armyRemoval {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.1);
+    }
+}
+
+/* Explosion Effect */
+.explosion-effect {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,140,0,1) 0%, rgba(255,69,0,0.7) 50%, rgba(255,0,0,0) 100%);
+    animation: explosion 0.8s ease-out;
+    pointer-events: none;
+}
+
+@keyframes explosion {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+    }
+}
+
+/* Territory Conquest Animation */
+.conquest-animation {
+    transition: height 1s ease, y 1s ease;
+}
+
+.conquest-flash {
+    animation: conquest-flash 1s;
+}
+
+@keyframes conquest-flash {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.5) saturate(1.5); }
+}
+
+/* Troop Movement Animation */
+.troop-movement-indicator {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: #3498db;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.7);
+    animation: troop-pulse 0.8s infinite alternate;
+}
+
+@keyframes troop-pulse {
+    0% { transform: translate(-50%, -50%) scale(0.8); }
+    100% { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .dice-animation-container {
+        width: 90%;
+    }
+    
+    .animated-die {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .die-face, .die-value-display {
+        font-size: 20px;
+    }
+}

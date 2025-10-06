@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lan        /* Sidebar Styles */
+        .game-ui {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 280px;
+            height: 100vh;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .game-ui.collapsed {
+            transform: translateX(280px);
+        }
+
+        .toggle-ui-btn {
+            position: fixed;
+            top: 10px;
+            right: 290px;
+            padding: 8px 12px;
+            background: #34495e;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .game-ui.collapsed + .toggle-ui-btn {
+            right: 10px;
+        }ad>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 300px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* Map Container Styles */
+        .map-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #2c3e50;
+            background-image: linear-gradient(45deg, #2c3e50 0%, #3498db 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            height: 100vh;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+
+        #risk-map {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            margin: 0;
+            cursor: grab;
+            overflow: visible;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+
+        /* Territory hover effect */
+        .territory {
+            transition: all 0.2s ease;
+            stroke-width: 1;
+            stroke: rgba(255,255,255,0.3);
+        }
+
+        .territory:hover {
+            filter: brightness(1.2);
+            stroke: #fff;
+            stroke-width: 2;
+        }
+
+        /* Tooltip styles */
+        .territory-tooltip {
+            position: fixed;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+        }
+
+        .territory-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .map-group {
+            transform-origin: center;
+            transition: transform 0.3s ease;
+            transform: translate(0, 0) scale(1);
+            width: 100%;
+            height: 100%;
+        }
+
+        #risk-map:active {
+            cursor: grabbing;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .zoom-btn {
+            padding: 8px 12px;
+            border: none;
+            background: #fff;
+            border-radius: 3px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .zoom-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* Territory and Continent Styles */
+        .territory {
+            fill: #f4d03f;
+            stroke: #333;
+            stroke-width: 1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            opacity: 0.9;
+            pointer-events: all;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .territory:hover {
+            fill-opacity: 0.8;
+            stroke-width: 2;
+            stroke: #000;
+        }
+
+        .territory.selected {
+            stroke: rgb(197, 197, 28);
+            stroke-width: 3;
+        }
+
+        .territory.valid-target {
+            stroke: #4CAF50;
+            stroke-width: 2;
+            cursor: pointer;
+        }
+
+        /* Continent Colors */
+        .continent-na .territory { fill: #ffd700; } /* North America - Yellow */
+        .continent-sa .territory { fill: #ff4444; } /* South America - Red */
+        .continent-eu .territory { fill: #4444ff; } /* Europe - Blue */
+        .continent-af .territory { fill: #ff8c00; } /* Africa - Orange */
+        .continent-as .territory { fill: #00cc00; } /* Asia - Green */
+        .continent-au .territory { fill: #ff00ff; } /* Australia - Purple */
+
+        /* Player Info and Controls */
+        .player-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .current-player {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .current-player h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        #current-player-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        /* Turn Phases Styles */
+        .turn-phases {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .phase-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .phase-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            margin: 0 4px;
+            position: relative;
+        }
+
+        .phase-item.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .phase-number {
+            display: block;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .phase-name {
+            display: block;
+            font-size: 0.9em;
+        }
+
+        .turn-info {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            font-size: 1.1em;
+        }
+
+        .turn-counter {
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .reinforcement-info {
+            color: #666;
+        }
+
+        #reinforcement-count {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .player-list h3 {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .player-item {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+
+        .player-item.active {
+            background-color: #e8f5e9;
+            border-color: #4CAF50;
+        }
+
+        /* Continent List */
+        .continent-list {
+            margin-bottom: 20px;
+        }
+
+        .continent-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .continent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .continent-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .bonus-value {
+            background-color: #eee;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+
+        /* Territory Info */
+        .territory-info {
+            flex: 1;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .territory-info h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .territory-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .territory-details, .player-stats {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+
+        .neighbors-list {
+            font-size: 0.9em;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .neighbors-list div {
+            padding: 3px 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .neighbors-list div:last-child {
+            border-bottom: none;
+        }
+
+        .instructions {
+            font-style: italic;
+            color: #444;
+            margin-top: 15px;
+        }
+
+        .territory-info strong {
+            color: #333;
+        }
+
+        .army-count {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            font-weight: bold;
+            pointer-events: none;
+            fill: white;
+            stroke: black;
+            stroke-width: 0.3px;
+            paint-order: stroke;
+            user-select: none;
+            vector-effect: non-scaling-stroke;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #eee;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .end-turn-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            padding: 12px 24px;
+            background-color: #bb0000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .end-turn-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Victory Screen */
+        .victory-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .victory-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .victory-content h1 {
+            color: #4CAF50;
+            margin-bottom: 1rem;
+        }
+
+        .victory-content button {
+            padding: 0.5rem 1rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="sidebar">
+            <div class="player-info">
+                <div class="current-player">
+                    <h2>Current Turn</h2>
+                    <div id="current-player-name"></div>
+                </div>
+                <div class="turn-phases">
+                    <h3>Game Phase</h3>
+                    <div class="phase-indicators">
+                        <div class="phase-item" data-phase="deploy">
+                            <span class="phase-number">1</span>
+                            <span class="phase-name">Deploy</span>
+                        </div>
+                        <div class="phase-item" data-phase="attack">
+                            <span class="phase-number">2</span>
+                            <span class="phase-name">Attack</span>
+                        </div>
+                        <div class="phase-item" data-phase="fortify">
+                            <span class="phase-number">3</span>
+                            <span class="phase-name">Fortify</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="turn-info">
+                    <div class="turn-counter">Turn: <span id="turn-number">1</span></div>
+                    <div class="reinforcement-info">
+                        Available Reinforcements: <span id="reinforcement-count">0</span>
+                    </div>
+                </div>
+                <div class="player-list">
+                    <h3>Players</h3>
+                    <div id="player-list-container"></div>
+                </div>
+            </div>
+            <div class="continent-list">
+                <div class="continent-header">Continents</div>
+                <!-- Continent items will be added here by JavaScript -->
+            </div>
+            <div class="territory-info">
+                <h3>Select a territory</h3>
+                <p>Click on any territory to view its details</p>
+            </div>
+            <div class="controls">
+                <button class="btn" id="reset-view">Reset View</button>
+            </div>
+        </div>
+        <div class="map-container">
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-in">+</button>
+                <button class="zoom-btn" id="zoom-out">−</button>
+                <button class="zoom-btn" id="reset-zoom">Reset</button>
+            </div>
+            <button class="end-turn-btn" id="end-turn">End Turn</button>
+            <svg id="risk-map" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+                        <feOffset dx="1" dy="1"/>
+                        <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <!-- Background -->
+                <rect width="100%" height="100%" fill="#e8f4f8"/>
+                <!-- Continents -->
+                <g class="map-group">
+                    <g id="north-america" class="continent continent-na" filter="url(#drop-shadow)"></g>
+                    <g id="south-america" class="continent continent-sa" filter="url(#drop-shadow)"></g>
+                    <g id="europe" class="continent continent-eu" filter="url(#drop-shadow)"></g>
+                    <g id="africa" class="continent continent-af" filter="url(#drop-shadow)"></g>
+                    <g id="asia" class="continent continent-as" filter="url(#drop-shadow)"></g>
+                    <g id="australia" class="continent continent-au" filter="url(#drop-shadow)"></g>
+                </g>
+            </svg>
+            <div class="tooltip"></div>
+        </div>
+    </div>
+
+    <!-- Load game scripts -->
+    <script>
+        // Function to load scripts in sequence
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error(`Failed to load ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        // Initialize game once everything is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // First load the critical data files
+            loadScript('js/mapData.js')
+            .then(() => loadScript('js/territory-paths.js'))
+            .then(() => {
+                // Verify data files are loaded
+                if (typeof mapData === 'undefined') {
+                    throw new Error('mapData failed to load');
+                }
+                if (typeof territoryPaths === 'undefined') {
+                    throw new Error('territoryPaths failed to load');
+                }
+                
+                // Then load the game logic files
+                return Promise.all([
+                    loadScript('js/GameState.js'),
+                    loadScript('js/TurnManager.js'),
+                    loadScript('js/attackLogic.js'),
+                    loadScript('js/RiskUI.js'),
+                    loadScript('js/RiskMap.js'),
+                    loadScript('js/RiskGame.js')
+                ]);
+            })
+            .then(() => {
+                // Verify required data is loaded
+                if (typeof mapData === 'undefined' || typeof territoryPaths === 'undefined') {
+                    throw new Error('Required game data not loaded');
+                }
+
+                // Initialize game
+                const riskUI = new RiskUI();
+                
+                // Try to get players from sessionStorage first
+                let players = [];
+                let playerColors = [];
+                const storedPlayers = sessionStorage.getItem('riskPlayers');
+                const storedColors = sessionStorage.getItem('riskPlayerColors');
+                
+                if (storedPlayers && storedColors) {
+                    // Use players and colors from sessionStorage
+                    players = JSON.parse(storedPlayers);
+                    playerColors = JSON.parse(storedColors);
+                } else {
+                    // Fallback to URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const playerCount = parseInt(urlParams.get('playerCount')) || 4;
+                    
+                    for (let i = 1; i <= playerCount; i++) {
+                        const playerName = urlParams.get(`player${i}`) || `Player ${i}`;
+                        const playerColor = urlParams.get(`color${i}`) || null;
+                        players.push(playerName);
+                        playerColors.push(decodeURIComponent(playerColor));
+                    }
+                    
+                    // Store in sessionStorage for later use
+                    sessionStorage.setItem('riskPlayers', JSON.stringify(players));
+                    sessionStorage.setItem('riskPlayerColors', JSON.stringify(playerColors));
+                }
+                
+                // Ensure we have at least 2 players
+                if (players.length < 2) {
+                    players = ['Player 1', 'Player 2'];
+                    playerColors = ['#ff4444', '#44ff44'];
+                }
+                
+                // Initialize game with players and colors
+                riskUI.initGame(players, playerColors);
+                const riskMap = new RiskMap(riskUI);
+
+                // Initialize game mechanics
+                const riskGame = new RiskGame(riskUI, riskMap);
+
+                // Store references globally if needed
+                window.riskUI = riskUI;
+                window.riskMap = riskMap;
+                window.riskGame = riskGame;
+            })
+            .catch(error => {
+                console.error('Failed to initialize game:', error);
+                document.querySelector('.map-container').innerHTML = `
+                    <div style="color: red; padding: 20px;">
+                        Error loading game data: ${error.message}<br>
+                        Please refresh the page.
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!-- Enhanced Attack Modal HTML -->
+<div id="enhanced-attack-modal" class="enhanced-attack-modal">
+    <div class="attack-modal-container">
+        <!-- Modal Header -->
+        <div class="attack-modal-header">
+            <h2><span class="material-icons">swords</span> Battle Commander</h2>
+            <button id="attack-modal-close" class="attack-modal-close">&times;</button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="attack-modal-body">
+            <!-- Battle View: Attacker vs Defender -->
+            <div class="battle-view">
+                <!-- Attacker Territory -->
+                <div class="territory-card attacker">
+                    <div class="territory-header">
+                        <div>
+                            <div class="territory-name" id="attacking-territory-name">Territory Name</div>
+                            <div class="territory-owner" id="attacking-territory-owner">Player Name</div>
+                        </div>
+                        <div class="territory-label">ATTACKER</div>
+                    </div>
+                    <div class="army-count attacker" id="attacking-territory-armies">10</div>
+                </div>
+                
+                <!-- VS Symbol -->
+                <div class="battle-versus">VS</div>
+                
+                <!-- Defender Territory -->
+                <div class="territory-card defender">
+                    <div class="territory-header">
+                        <div>
+                            <div class="territory-name" id="defending-territory-name">Territory Name</div>
+                            <div class="territory-owner" id="defending-territory-owner">Player Name</div>
+                        </div>
+                        <div class="territory-label">DEFENDER</div>
+                    </div>
+                    <div class="army-count defender" id="defending-territory-armies">5</div>
+                </div>
+            </div>
+            
+            <!-- Dice Controls -->
+            <div id="dice-controls" class="dice-controls">
+                <div class="dice-controls-header">
+                    <div class="dice-controls-title">Select Dice</div>
+                    <div class="dice-help">Higher dice count = higher chance to win, but higher risk</div>
+                </div>
+                <div class="dice-rows">
+                    <!-- Attacker Dice Selection -->
+                    <div class="dice-row">
+                        <div class="dice-row-label attacker-label">
+                            <span class="material-icons">casino</span> Attacker Dice
+                        </div>
+                        <div class="dice-options" id="attacker-dice-options">
+                            <div class="dice-option attacker" data-dice="1">1</div>
+                            <div class="dice-option attacker" data-dice="2">2</div>
+                            <div class="dice-option attacker" data-dice="3">3</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Defender Dice Selection -->
+                    <div class="dice-row">
+                        <div class="dice-row-label defender-label">
+                            <span class="material-icons">shield</span> Defender Dice
+                        </div>
+                        <div class="dice-options" id="defender-dice-options">
+                            <div class="dice-option defender selected" data-dice="1">1</div>
+                            <div class="dice-option defender" data-dice="2">2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dice Results (initially hidden) -->
+            <div id="dice-results" class="dice-results">
+                <div class="dice-controls-title">Battle Results</div>
+                
+                <div class="dice-comparison">
+                    <!-- Attacker Dice -->
+                    <div class="dice-group">
+                        <div class="dice-group-label attacker-label">Attacker Rolls</div>
+                        <div class="dice-display" id="attacker-dice-display">
+                            <!-- Dice will be added dynamically -->
+                            <div class="die attacker winner">6</div>
+                            <div class="die attacker loser">3</div>
+                            <div class="die attacker">1</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Defender Dice -->
+                    <div class="dice-group">
+                        <div class="dice-group-label defender-label">Defender Rolls</div>
+                        <div class="dice-display" id="defender-dice-display">
+                            <!-- Dice will be added dynamically -->
+                            <div class="die defender winner">5</div>
+                            <div class="die defender">2</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="battle-results-summary">
+                    <div class="battle-status" id="battle-status">The battle continues...</div>
+                    <div class="battle-casualties">
+                        <div class="casualty-stat">
+                            <div class="casualty-label">Attacker Lost</div>
+                            <div class="casualty-value attacker" id="attacker-casualties">1</div>
+                        </div>
+                        <div class="casualty-stat">
+                            <div class="casualty-label">Defender Lost</div>
+                            <div class="casualty-value defender" id="defender-casualties">1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Conquest Notification (initially hidden) -->
+            <div id="conquest-notification" class="conquest-notification">
+                <div class="conquest-title">Territory Conquered!</div>
+                <p>You have defeated all enemy armies and conquered this territory.</p>
+            </div>
+            
+            <!-- Army Movement Controls (for conquests) -->
+            <div id="army-movement" class="army-movement" style="display: none;">
+                <div class="army-movement-title">Move Armies to Conquered Territory</div>
+                <div class="army-slider-container">
+                    <div class="army-count-display" id="armies-to-move-display">3</div>
+                    <input type="range" min="1" max="10" value="3" class="army-slider" id="armies-to-move-slider">
+                    <div class="army-slider-labels">
+                        <span>1 (min)</span>
+                        <span id="max-armies-label">10 (max)</span>
+                    </div>
+                </div>
+                <div class="movement-result" id="movement-result">
+                    <div><strong>After movement:</strong></div>
+                    <div><span id="source-territory-name">Source</span>: <span id="source-remaining">7</span> armies remaining</div>
+                    <div><span id="target-territory-name">Target</span>: <span id="target-new">3</span> armies</div>
+                </div>
+            </div>
+            
+            <!-- Battle Log -->
+            <div class="battle-log">
+                <div class="battle-log-title">
+                    <span class="material-icons">history</span> Battle Log
+                </div>
+                <div id="battle-log-entries">
+                    <!-- Battle log entries will be added dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer with Action Buttons -->
+        <div class="attack-modal-footer">
+            <!-- These buttons will be shown/hidden based on battle state -->
+            <button id="btn-retreat" class="action-btn btn-retreat">Retreat</button>
+            
+            <!-- Center button changes based on context -->
+            <button id="btn-roll" class="action-btn btn-roll">Roll Dice</button>
+            <button id="btn-continue" class="action-btn btn-continue" style="display: none;">Continue Attack</button>
+            <button id="btn-complete" class="action-btn btn-complete" style="display: none;">Complete Conquest</button>
+        </div>
+    </div>
+</div>
+
+<!-- SVG Definitions for Attack Paths -->
+<svg width="0" height="0" style="position: absolute;">
+    <defs>
+        <marker id="attackArrow" viewBox="0 0 10 10" refX="9" refY="5" 
+                markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff6600"/>
+        </marker>
+    </defs>
+</svg>

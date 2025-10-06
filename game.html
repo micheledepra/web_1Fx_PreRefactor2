@@ -1,0 +1,4728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Game</title>
+    <link rel="stylesheet" href="css/combat-system.css">
+    <link rel="stylesheet" href="css/combat-animations.css">
+    <link rel="stylesheet" href="css/combat-testing.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Territory Info Tooltip */
+        .territory-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            min-width: 200px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            backdrop-filter: blur(5px);
+            will-change: transform;
+            transform: translateZ(0);
+            margin: 0;
+            cursor: none;
+        }
+
+        .territory-tooltip h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 5px;
+            text-transform: capitalize;
+        }
+
+        .territory-tooltip p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .territory-tooltip .owner {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .territory-tooltip .armies {
+            font-weight: bold;
+            color: #FFC107;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 320px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* Reinforcement Display Styles */
+        .reinforcement-panel {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .reinforcement-panel.active {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .reinforcement-counter {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .reinforcement-info {
+            text-align: center;
+        }
+
+        .reinforcement-info.active .reinforcement-status {
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .reinforcement-info.complete .reinforcement-status {
+            color: #004085;
+            font-weight: bold;
+        }
+
+        /* Enhanced Attack Panel Styles */
+        .attack-panel {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .attack-panel.active {
+            display: block;
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, #ffe0e0 0%, #ffcccc 100%);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .attack-info h4 {
+            margin: 0 0 10px 0;
+            color: #721c24;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .attack-status {
+            font-weight: 500;
+            color: #856404;
+            font-size: 0.95em;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .attack-selection {
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .attack-territory, .defend-territory {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 0 8px;
+            transition: all 0.3s ease;
+        }
+
+        .attack-territory {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #2196f3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .defend-territory {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border: 2px solid #f44336;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .territory-label {
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .territory-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+
+        .territory-armies {
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Enhanced Dice Selection */
+        .dice-selection {
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .dice-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dice-controls label {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #495057;
+            text-align: center;
+        }
+
+        .dice-count {
+            font-size: 1.4em;
+            font-weight: bold;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            min-width: 40px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+            color: #495057;
+        }
+
+        .dice-btn {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .dice-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .dice-btn:disabled {
+            background: #dee2e6;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Enhanced Combat Results */
+        .combat-results {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .combat-results h5 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .dice-display {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 6px;
+        }
+
+        .dice-group {
+            text-align: center;
+        }
+
+        .dice-group > div:first-child {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .dice-rolls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .die {
+            width: 36px;
+            height: 36px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .die.attacker {
+            border-color: #2196f3;
+            color: #2196f3;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        .die.defender {
+            border-color: #f44336;
+            color: #f44336;
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        }
+
+        .battle-result {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 6px;
+            font-weight: 500;
+            color: #495057;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Enhanced Attack Buttons */
+        .attack-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .attack-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .attack-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .attack-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .attack-options .attack-btn {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .reinforcement-instruction {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+
+        /* Continent Bonus Display */
+        .continent-bonus-display {
+            margin-top: 15px;
+        }
+
+        .continent-bonus-display h4 {
+            margin-bottom: 10px;
+            color: #495057;
+            font-size: 1em;
+        }
+
+        /* Continent Item Styles for RiskUI.js compatibility */
+        .continent-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+
+        .continent-item.controlled {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+
+
+        .continent-list {
+            margin-top: 10px;
+        }
+
+        /* Interactive Continent Styles */
+        .interactive-continent {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .interactive-continent:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+        }
+
+
+
+        .interactive-continent.controlled {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .interactive-continent.controlled:hover {
+            background: #c3e6cb;
+            border-color: #28a745;
+        }
+
+        .continent-name {
+            font-weight: 500;
+            color: #495057;
+            flex: 1;
+        }
+
+        .continent-bonus {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 0.9em;
+            padding: 2px 8px;
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 12px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* Map Container Styles */
+        .map-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #059ed1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #risk-map {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            margin: 0;
+            cursor: grab;
+            overflow: visible;
+        }
+
+        .map-group {
+            transform-origin: center;
+            transition: transform 0.3s ease;
+            transform: translate(0, 0) scale(1);
+            width: 100%;
+            height: 100%;
+        }
+
+        #risk-map:active {
+            cursor: grabbing;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .zoom-btn {
+            padding: 8px 12px;
+            border: none;
+            background: #fff;
+            border-radius: 3px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .zoom-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* Delete duplicate tooltip styles */
+
+        /* Territory and Continent Styles */
+        .territory {
+            fill: #f4d03f;
+            stroke: #333;
+            stroke-width: 1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            opacity: 0.9;
+            pointer-events: all;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .territory:hover {
+            fill-opacity: 0.8;
+            stroke-width: 2;
+            stroke: #000;
+        }
+
+        .territory.selected {
+            stroke: rgb(197, 197, 28);
+            stroke-width: 3;
+        }
+
+        .territory.valid-target {
+            stroke: #4CAF50;
+            stroke-width: 2;
+            cursor: pointer;
+        }
+
+        /* Territory Highlighting for Attack Phase */
+        .territory.highlight-attackable {
+            stroke: #4CAF50 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 8px #4CAF50);
+            animation: pulse-glow 2s infinite;
+            cursor: pointer;
+        }
+
+        .territory.highlight-attacking-from {
+            stroke: #2196F3 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 10px #2196F3);
+            cursor: pointer;
+        }
+
+        .territory.highlight-selected-attacker {
+            stroke: #FFD700 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 12px #FFD700);
+            animation: pulse-selected 1.5s infinite;
+        }
+
+        .territory.highlight-valid-target {
+            stroke: #FF9800 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 8px #FF9800);
+            animation: pulse-target 2s infinite;
+            cursor: pointer;
+        }
+
+        .territory.highlight-selected-target {
+            stroke: #F44336 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 12px #F44336);
+            animation: pulse-selected 1.5s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 8px currentColor);
+                stroke-opacity: 1; 
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px currentColor);
+                stroke-opacity: 0.7; 
+            }
+        }
+
+        @keyframes pulse-continent {
+            0%, 100% {
+                stroke-opacity: 1;
+                filter: drop-shadow(0 0 8px #9C27B0);
+            }
+            50% {
+                stroke-opacity: 0.7;
+                filter: drop-shadow(0 0 15px #9C27B0);
+            }
+        }
+
+        /* Continent highlighting styles */
+        .territory.highlight-continent {
+            stroke: #9C27B0 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 10px #9C27B0);
+        }
+
+        @keyframes pulse-selected {
+            0%, 100% { 
+                filter: drop-shadow(0 0 12px currentColor);
+                stroke-opacity: 1; 
+            }
+            50% { 
+                filter: drop-shadow(0 0 20px currentColor);
+                stroke-opacity: 0.8; 
+            }
+        }
+
+        @keyframes pulse-target {
+            0%, 100% { 
+                filter: drop-shadow(0 0 8px currentColor);
+                stroke-opacity: 1; 
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px currentColor);
+                stroke-opacity: 0.7; 
+            }
+        }
+
+        /* Continent Colors */
+        .continent-na .territory { fill: #ffd700; } /* North America - Yellow */
+        .continent-sa .territory { fill: #ff4444; } /* South America - Red */
+        .continent-eu .territory { fill: #4444ff; } /* Europe - Blue */
+        .continent-af .territory { fill: #ff8c00; } /* Africa - Orange */
+        .continent-as .territory { fill: #00cc00; } /* Asia - Green */
+        .continent-au .territory { fill: #ff00ff; } /* Australia - Purple */
+
+        /* Player Info and Controls */
+        .player-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .current-player {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .current-player h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        #current-player-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .player-list h3 {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .player-item {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+
+        .player-item.active {
+            background-color: #e8f5e9;
+            border-color: #4CAF50;
+        }
+
+        /* Territory Info */
+        .territory-info {
+            flex: 1;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .territory-info h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .territory-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #eee;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .end-turn-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            padding: 12px 24px;
+            background-color: #bb0000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .end-turn-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Modal Styles - Common for all modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 400px;
+            max-width: 700px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+            margin: 40px auto;
+        }
+        
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #f44336;
+        }
+        
+        /* Rules Modal specific styles */
+        .rules-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 20px;
+        }
+        
+        .rules-table th, .rules-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .rules-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .rules-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        /* Deployment Modal Styles - keep existing styles for compatibility */
+        .deployment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .deployment-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 400px;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .deployment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .deployment-header h3 {
+            margin: 0;
+            color: #343a40;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #dc3545;
+        }
+
+        .deployment-info {
+            margin-bottom: 20px;
+        }
+
+        .territory-info h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+        }
+
+        .territory-info p {
+            margin: 4px 0;
+            color: #6c757d;
+        }
+
+        .available-armies {
+            margin-top: 12px;
+            padding: 12px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .available-armies p {
+            margin: 0;
+            font-weight: 500;
+            color: #1565c0;
+        }
+
+        .deployment-controls {
+            margin-bottom: 20px;
+        }
+
+        .deployment-controls label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .army-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .army-input-group button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #ced4da;
+            background: #f8f9fa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .army-input-group button:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .army-input-group input {
+            flex: 1;
+            height: 36px;
+            text-align: center;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .army-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+        }
+
+        .army-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+        }
+
+        .army-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+            border: none;
+        }
+
+        .deployment-preview {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .preview-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .preview-item span:first-child {
+            color: #6c757d;
+        }
+
+        .preview-item span:last-child {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .deployment-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .deploy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .deploy-btn:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        .deploy-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .cancel-btn:hover {
+            background: #5a6268;
+        }
+
+        /* Victory Screen */
+        .victory-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .victory-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        /* Fortification Modal */
+        .fortification-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .fortification-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .fortification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .fortification-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .movement-path {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .territory-info {
+            flex: 1;
+            text-align: center;
+        }
+
+        .territory-info.source {
+            color: #d32f2f;
+        }
+
+        .territory-info.destination {
+            color: #388e3c;
+        }
+
+        .movement-arrow {
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+            margin: 0 20px;
+        }
+
+        .movement-constraints {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+        }
+
+        .constraint-note {
+            font-size: 12px;
+            color: #856404;
+            margin: 5px 0 0 0;
+        }
+
+        .fortification-controls {
+            margin-bottom: 20px;
+        }
+
+        .fortification-controls label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .fortification-preview {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e8f5e8;
+            border-radius: 6px;
+        }
+
+        .fortification-preview h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2e7d32;
+        }
+
+        .fortification-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .fortification-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .secondary-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .secondary-btn:hover {
+            background: #5a6268;
+        }
+
+        .primary-btn {
+            background: #007bff;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: #0056b3;
+        }
+
+        /* Fortification highlighting */
+        .highlight-valid-source {
+            stroke: #4caf50 !important;
+            stroke-width: 3px !important;
+            stroke-dasharray: 5,5;
+            animation: pulse-green 2s infinite;
+        }
+
+        .highlight-valid-destination {
+            stroke: #2196f3 !important;
+            stroke-width: 3px !important;
+            stroke-dasharray: 3,3;
+            animation: pulse-blue 2s infinite;
+        }
+
+        .highlight-selected-source {
+            stroke: #ff9800 !important;
+            stroke-width: 4px !important;
+            filter: brightness(1.2);
+        }
+
+        .highlight-selected-destination {
+            stroke: #e91e63 !important;
+            stroke-width: 4px !important;
+            filter: brightness(1.2);
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { stroke-opacity: 1; }
+            50% { stroke-opacity: 0.5; }
+        }
+
+        @keyframes pulse-blue {
+            0%, 100% { stroke-opacity: 1; }
+            50% { stroke-opacity: 0.7; }
+        }
+
+        .victory-content h1 {
+            color: #4CAF50;
+            margin-bottom: 1rem;
+        }
+
+        .victory-content button {
+            padding: 0.5rem 1rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+
+        /* Enhanced Visual System Styles */
+        .highlight-selected {
+            stroke: #FFD700 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 8px #FFD700);
+        }
+
+        .highlight-validTarget {
+            stroke: #4CAF50 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 6px #4CAF50);
+        }
+
+        .highlight-invalidTarget {
+            stroke: #F44336 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 6px #F44336);
+        }
+
+        .highlight-ownTerritory {
+            stroke: #2196F3 !important;
+            stroke-width: 2px !important;
+        }
+
+        .highlight-hover {
+            stroke: #FF9800 !important;
+            stroke-width: 2px !important;
+            filter: drop-shadow(0 0 4px #FF9800);
+        }
+
+        /* Army count styling */
+        .army-count {
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Enhanced tooltip improvements */
+        .enhanced-tooltip {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+        }
+
+        .enhanced-tooltip .tooltip-header {
+            text-transform: capitalize;
+            font-weight: 600;
+        }
+
+        /* Phase indication styles */
+        .phase-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+        }
+
+        .current-phase-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #4CAF50;
+            margin-bottom: 5px;
+        }
+
+        .phase-instructions {
+            font-size: 12px;
+            color: #ccc;
+            font-style: italic;
+        }
+
+        /* Clear selection button */
+        #clear-selection {
+            background: #FF5722;
+            margin-top: 5px;
+        }
+
+        #clear-selection:hover {
+            background: #E64A19;
+        }
+
+        /* Player color indicator */
+        .player-color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            margin-right: 10px;
+        }
+
+        /* Battle Management Modal Styles */
+        .battle-modal-content {
+            min-width: 500px;
+            max-width: 600px;
+        }
+
+        .battle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .battle-header h3 {
+            margin: 0;
+            color: #343a40;
+            font-size: 1.3em;
+        }
+
+        .battle-territories {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .battle-territory {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 0 8px;
+        }
+
+        .battle-territory.attacker {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #2196f3;
+        }
+
+        .battle-territory.defender {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border: 2px solid #f44336;
+        }
+
+        .battle-vs {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #495057;
+            margin: 0 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .territory-label {
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .territory-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+
+        .territory-owner {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+            font-style: italic;
+        }
+
+        .territory-armies {
+            font-size: 1em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .battle-instructions {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+        }
+
+        .battle-instructions p {
+            margin: 5px 0;
+            color: #856404;
+        }
+
+        .battle-note {
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        .battle-inputs {
+            margin-bottom: 20px;
+        }
+
+        .battle-input-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .battle-input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .army-input-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .army-input-controls button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #ced4da;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .army-input-controls button:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .army-input-controls button:disabled {
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .army-input-controls input {
+            flex: 1;
+            height: 36px;
+            text-align: center;
+            border: 2px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            background: white;
+        }
+
+        .army-input-controls input:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        .input-constraint {
+            font-size: 0.85em;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .battle-preview {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .battle-preview h4 {
+            margin: 0 0 12px 0;
+            color: #2e7d32;
+            font-size: 1.1em;
+        }
+
+        .battle-preview-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+
+        .battle-preview-item span:first-child {
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .battle-preview-item span:last-child {
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .battle-conquest {
+            margin-top: 15px;
+            padding: 12px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            text-align: center;
+            color: #155724;
+            font-size: 1.1em;
+        }
+
+        .battle-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .resolve-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .resolve-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .resolve-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Unit Transfer Modal Styles */
+        .unit-transfer-modal-content {
+            min-width: 550px;
+            max-width: 650px;
+        }
+
+        .transfer-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #28a745;
+        }
+
+        .transfer-header h3 {
+            margin: 0 0 10px 0;
+            color: #28a745;
+            font-size: 1.4em;
+        }
+
+        .conquest-message {
+            margin: 0;
+            color: #6c757d;
+            font-size: 1em;
+            font-style: italic;
+        }
+
+        .transfer-territories {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+        }
+
+        .transfer-territory {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 0 8px;
+        }
+
+        .transfer-territory.source {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #2196f3;
+        }
+
+        .transfer-territory.destination {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border: 2px solid #28a745;
+        }
+
+        .transfer-arrow {
+            font-size: 1.5em;
+            margin: 0 15px;
+            color: #28a745;
+        }
+
+        .transfer-constraints {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+        }
+
+        .transfer-constraints p {
+            margin: 0 0 10px 0;
+            color: #856404;
+            font-weight: 600;
+        }
+
+        .transfer-constraints ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #856404;
+        }
+
+        .transfer-constraints li {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .transfer-controls {
+            margin-bottom: 20px;
+        }
+
+        .transfer-controls > label {
+            display: block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .transfer-input-group {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .slider-container {
+            flex: 2;
+        }
+
+        .transfer-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            outline: none;
+            margin-bottom: 10px;
+        }
+
+        .transfer-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .transfer-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .direct-input {
+            flex: 1;
+        }
+
+        .direct-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .transfer-number-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .transfer-number-input button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ced4da;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .transfer-number-input button:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .transfer-number-input button:disabled {
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .transfer-number-input input {
+            width: 60px;
+            height: 32px;
+            text-align: center;
+            border: 2px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .transfer-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .transfer-preview h4 {
+            margin: 0 0 12px 0;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .transfer-result {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .result-item span:first-child {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .result-item span:last-child {
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .transfer-error {
+            min-height: 24px;
+            margin-top: 10px;
+        }
+        
+        .transfer-error .error-message {
+            color: #f44336;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            margin: 5px 0;
+        }
+
+        .transfer-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .transfer-actions button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .primary-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Attack Modal Styles */
+        .attack-modal-content {
+            min-width: 550px;
+            max-width: 700px;
+        }
+
+        .attack-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .attack-header h3 {
+            margin: 0;
+            color: #dc3545;
+            font-size: 1.3em;
+        }
+
+        .attack-vs {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #495057;
+            margin: 0 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Attack Button in Sidebar */
+        #attack-button-container .attack-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        #attack-button-container .attack-btn:hover {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Phase Management Styles */
+        .phase-indicator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .phase-header h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .phase-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .phase-name.phase-deploy {
+            color: #4CAF50;
+        }
+
+        .phase-name.phase-attack {
+            color: #f44336;
+        }
+
+        .phase-name.phase-fortify {
+            color: #2196F3;
+        }
+
+        .phase-description {
+            font-size: 0.95em;
+            margin-bottom: 15px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .phase-progress {
+            margin-top: 15px;
+        }
+
+        .phase-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .phase-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .phase-progress-text {
+            font-size: 0.85em;
+            opacity: 0.8;
+            text-align: center;
+        }
+
+        .phase-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .phase-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .phase-btn:disabled {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .phase-btn.secondary {
+            background-color: #6c757d;
+        }
+
+        .phase-btn.secondary:hover:not(:disabled) {
+            background-color: #545b62;
+        }
+
+        /* Territory highlighting for phases */
+        .territory.highlight-own {
+            stroke: #4CAF50 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 8px #4CAF50);
+            animation: pulse-glow 2s infinite;
+        }
+
+        .territory.highlight-attackable {
+            stroke: #f44336 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 8px #f44336);
+            animation: pulse-glow 2s infinite;
+        }
+
+        .territory.highlight-fortifiable {
+            stroke: #2196F3 !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 8px #2196F3);
+            animation: pulse-glow 2s infinite;
+        }
+
+        .territory.highlight-valid-source {
+            stroke: #FF9800 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 10px #FF9800);
+        }
+
+        .territory.highlight-valid-target {
+            stroke: #9C27B0 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 10px #9C27B0);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 8px currentColor);
+                stroke-opacity: 1; 
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px currentColor);
+                stroke-opacity: 0.7; 
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .phase-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 10001;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Phase-specific button styling */
+        .end-turn-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            padding: 12px 24px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .end-turn-btn.phase-deploy {
+            background-color: #4CAF50;
+        }
+
+        .end-turn-btn.phase-attack {
+            background-color: #f44336;
+        }
+
+        .end-turn-btn.phase-fortify {
+            background-color: #2196F3;
+        }
+
+        .end-turn-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+
+        .end-turn-btn:disabled {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="sidebar">
+            <!-- 1. Current Turn Panel (TOP) -->
+            <div class="player-info">
+                <div class="current-player">
+                    <h2>Current Turn</h2>
+                    <div id="current-player-name"></div>
+                </div>
+                <div class="player-list">
+                    <h3>Players</h3>
+                    <div id="player-list-container"></div>
+                </div>
+            </div>
+
+            <!-- 2. Phase Management Panel (MIDDLE) -->
+            <div class="phase-indicator" id="phase-indicator">
+                <div class="phase-header">
+                    <h3>Current Phase</h3>
+                </div>
+                <div class="phase-name phase-deploy" id="phase-name">DEPLOYMENT</div>
+                <div class="phase-description" id="phase-description">Deploy your reinforcement armies to your territories</div>
+                <div class="phase-buttons" id="phase-buttons">
+                    <button class="phase-btn" id="start-attack-btn" onclick="window.startAttackPhase()" style="display: none;">
+                        ⚔️ Start Attack Phase
+                    </button>
+                    <button class="phase-btn" id="end-attack-btn" onclick="window.endAttackPhase()" style="display: none;">
+                        ✋ End Attacks
+                    </button>
+                    <button class="phase-btn" id="skip-attack-btn" onclick="window.skipAttackPhase()" style="display: none;">
+                        ➡️ Skip Attack
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Ready to Deploy Panel (BOTTOM) -->
+            <div class="reinforcement-panel" id="reinforcement-panel">
+                <div class="reinforcement-counter" id="reinforcement-counter">0</div>
+                <div class="reinforcement-info" id="reinforcement-info">
+                    <div class="reinforcement-status">Ready to deploy</div>
+                    <div class="reinforcement-instruction">Click on your territories to deploy armies</div>
+                </div>
+                
+                <!-- Interactive Continent List -->
+                <div class="continent-bonus-display" id="continent-bonus-display">
+                    <h4>Continent Bonuses</h4>
+                    <div class="continent-list" id="interactive-continent-list">
+                        <div class="continent-item interactive-continent" data-continent="north-america" onclick="window.selectContinent('north-america')">
+                            <span class="continent-name">North America</span>
+                            <span class="continent-bonus">+5</span>
+                        </div>
+                        <div class="continent-item interactive-continent" data-continent="south-america" onclick="window.selectContinent('south-america')">
+                            <span class="continent-name">South America</span>
+                            <span class="continent-bonus">+2</span>
+                        </div>
+                        <div class="continent-item interactive-continent" data-continent="europe" onclick="window.selectContinent('europe')">
+                            <span class="continent-name">Europe</span>
+                            <span class="continent-bonus">+5</span>
+                        </div>
+                        <div class="continent-item interactive-continent" data-continent="africa" onclick="window.selectContinent('africa')">
+                            <span class="continent-name">Africa</span>
+                            <span class="continent-bonus">+3</span>
+                        </div>
+                        <div class="continent-item interactive-continent" data-continent="asia" onclick="window.selectContinent('asia')">
+                            <span class="continent-name">Asia</span>
+                            <span class="continent-bonus">+7</span>
+                        </div>
+                        <div class="continent-item interactive-continent" data-continent="australia" onclick="window.selectContinent('australia')">
+                            <span class="continent-name">Australia</span>
+                            <span class="continent-bonus">+2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attack Button in Sidebar (appears when valid attacking territory is selected) -->
+            <div id="attack-button-container" style="display: none; margin-bottom: 20px;">
+                <button class="attack-btn" id="open-attack-modal" onclick="window.openAttackModal()">
+                    ⚔️ Launch Attack
+                </button>
+                <div class="attack-info" style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 6px;">
+                    <div id="selected-attacking-territory" style="font-weight: bold; color: #856404;"></div>
+                    <div style="font-size: 0.9em; color: #666;">Click to open attack window</div>
+                </div>
+            </div>
+
+            <!-- Territory Info Section -->
+            <div class="territory-info">
+                <h3>Territory Details</h3>
+                <div id="territory-details">
+                    <p>Click on any territory to view its details</p>
+                </div>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="controls">
+                <button class="btn" id="reset-view">Reset View</button>
+                <button class="btn" id="rules-btn">Game Rules</button>
+            </div>
+
+            <!-- Game Rules Modal -->
+            <div id="rules-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Risk Game Rules</h2>
+                    
+                    <h3>Initial Army Count</h3>
+                    <p>At the beginning of the game, each player receives armies based on the number of players:</p>
+                    <table class="rules-table">
+                        <tr>
+                            <th>Players</th>
+                            <th>Initial Armies</th>
+                        </tr>
+                        <tr>
+                            <td>2 players</td>
+                            <td>40 armies each</td>
+                        </tr>
+                        <tr>
+                            <td>3 players</td>
+                            <td>35 armies each</td>
+                        </tr>
+                        <tr>
+                            <td>4 players</td>
+                            <td>30 armies each</td>
+                        </tr>
+                        <tr>
+                            <td>5 players</td>
+                            <td>25 armies each</td>
+                        </tr>
+                        <tr>
+                            <td>6 players</td>
+                            <td>20 armies each</td>
+                        </tr>
+                    </table>
+                    
+                    <h3>Reinforcement Rules</h3>
+                    <p>At the beginning of each turn, you receive:</p>
+                    <ul>
+                        <li>1 army for every 3 territories you control (minimum of 3)</li>
+                        <li>Continent bonus armies if you control an entire continent:
+                            <ul>
+                                <li>North America: 5 armies</li>
+                                <li>South America: 2 armies</li>
+                                <li>Europe: 5 armies</li>
+                                <li>Africa: 3 armies</li>
+                                <li>Asia: 7 armies</li>
+                                <li>Australia: 2 armies</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Battle Management Modal -->
+            <div id="battle-modal" class="modal">
+                <div class="modal-content battle-modal-content">
+                    <div class="battle-header">
+                        <h3>Battle Resolution</h3>
+                        <button class="close-btn" onclick="window.closeBattleModal()">&times;</button>
+                    </div>
+                    
+                    <div class="battle-info">
+                        <div class="battle-territories">
+                            <div class="battle-territory attacker">
+                                <div class="territory-label">ATTACKER</div>
+                                <div class="territory-name" id="battle-attacker-name">Territory Name</div>
+                                <div class="territory-owner" id="battle-attacker-owner">Player Name</div>
+                                <div class="territory-armies" id="battle-attacker-armies">0 armies</div>
+                            </div>
+                            <div class="battle-vs">VS</div>
+                            <div class="battle-territory defender">
+                                <div class="territory-label">DEFENDER</div>
+                                <div class="territory-name" id="battle-defender-name">Territory Name</div>
+                                <div class="territory-owner" id="battle-defender-owner">Player Name</div>
+                                <div class="territory-armies" id="battle-defender-armies">0 armies</div>
+                            </div>
+                        </div>
+                        
+                        <div class="battle-instructions">
+                            <p>Enter the number of armies remaining after the battle:</p>
+                            <p class="battle-note">Note: Armies cannot exceed initial numbers. If defender has 0 armies, territory will be conquered.</p>
+                        </div>
+                        
+                        <div class="battle-inputs">
+                            <div class="battle-input-group">
+                                <label for="attacker-remaining">Attacker Remaining Armies:</label>
+                                <div class="army-input-controls">
+                                    <button type="button" onclick="window.adjustBattleArmies('attacker', -1)">−</button>
+                                    <input type="number" id="attacker-remaining" min="1" max="0" value="0">
+                                    <button type="button" onclick="window.adjustBattleArmies('attacker', 1)">+</button>
+                                </div>
+                                <div class="input-constraint" id="attacker-constraint">Max: 0 armies</div>
+                            </div>
+                            
+                            <div class="battle-input-group">
+                                <label for="defender-remaining">Defender Remaining Armies:</label>
+                                <div class="army-input-controls">
+                                    <button type="button" onclick="window.adjustBattleArmies('defender', -1)">−</button>
+                                    <input type="number" id="defender-remaining" min="0" max="0" value="0">
+                                    <button type="button" onclick="window.adjustBattleArmies('defender', 1)">+</button>
+                                </div>
+                                <div class="input-constraint" id="defender-constraint">Max: 0 armies</div>
+                            </div>
+                        </div>
+                        
+                        <div class="battle-preview">
+                            <h4>Battle Result Preview:</h4>
+                            <div class="battle-preview-item">
+                                <span id="preview-attacker-name">Attacker</span>: 
+                                <span id="preview-attacker-armies">0 armies</span>
+                            </div>
+                            <div class="battle-preview-item">
+                                <span id="preview-defender-name">Defender</span>: 
+                                <span id="preview-defender-armies">0 armies</span>
+                            </div>
+                            <div class="battle-conquest" id="battle-conquest" style="display: none;">
+                                <strong>🏆 Territory will be conquered!</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="battle-actions">
+                            <button class="cancel-btn" onclick="window.closeBattleModal()">Cancel</button>
+                            <button class="resolve-btn" id="resolve-battle-btn" onclick="window.resolveBattle()">Resolve Battle</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unit Transfer Modal -->
+            <div id="unit-transfer-modal" class="modal">
+                <div class="modal-content unit-transfer-modal-content">
+                    <div class="transfer-header">
+                        <h3>🏆 Territory Conquered!</h3>
+                        <p class="conquest-message">Choose how many armies to move to your new territory</p>
+                    </div>
+                    
+                    <div class="transfer-info">
+                        <div class="transfer-territories">
+                            <div class="transfer-territory source">
+                                <div class="territory-label">FROM</div>
+                                <div class="territory-name" id="transfer-source-name">Attacking Territory</div>
+                                <div class="territory-armies" id="transfer-source-armies">0 armies</div>
+                            </div>
+                            <div class="transfer-arrow">➡️</div>
+                            <div class="transfer-territory destination">
+                                <div class="territory-label">TO (CONQUERED)</div>
+                                <div class="territory-name" id="transfer-destination-name">Conquered Territory</div>
+                                <div class="territory-armies" id="transfer-destination-armies">1 army (minimum)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="transfer-constraints">
+                            <p><strong>Transfer Rules:</strong></p>
+                            <ul>
+                                <li>Minimum 1 army must move to conquered territory</li>
+                                <li>At least 1 army must remain in attacking territory</li>
+                                <li id="transfer-range">You can transfer 1-0 armies</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="transfer-controls">
+                            <label for="transfer-slider">Armies to Transfer:</label>
+                            <div class="transfer-input-group">
+                                <div class="slider-container">
+                                    <input type="range" id="transfer-slider" min="1" max="1" value="1" class="transfer-slider">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span id="slider-max-label">1</span>
+                                    </div>
+                                </div>
+                                <div class="direct-input">
+                                    <label for="transfer-input">Or type directly:</label>
+                                    <div class="transfer-number-input">
+                                        <button type="button" onclick="window.adjustTransferArmies(-1)">−</button>
+                                        <input type="number" id="transfer-input" min="1" max="1" value="1">
+                                        <button type="button" onclick="window.adjustTransferArmies(1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="transfer-preview">
+                            <h4>Result Preview:</h4>
+                            <div class="transfer-result">
+                                <div class="result-item">
+                                    <span id="preview-source-name">Attacking Territory</span>: 
+                                    <span id="preview-source-armies">0 armies remaining</span>
+                                </div>
+                                <div class="result-item">
+                                    <span id="preview-destination-name">Conquered Territory</span>: 
+                                    <span id="preview-destination-armies">1 army total</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="transfer-error">
+                            <p id="transfer-error-message" class="error-message"></p>
+                        </div>
+                        
+                        <div class="transfer-actions">
+                            <button class="secondary-btn" id="use-minimum-btn" onclick="window.cancelTransfer()">Use Minimum (1 army)</button>
+                            <button class="primary-btn" id="confirm-transfer-btn" onclick="window.confirmTransfer()">Confirm Transfer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attack Modal Window -->
+            <div id="attack-modal" class="modal">
+                <div class="modal-content attack-modal-content">
+                    <div class="attack-header">
+                        <h3>⚔️ Attack Phase</h3>
+                        <button class="close-btn" onclick="window.closeAttackModal()">×</button>
+                    </div>
+                    
+                    <div class="attack-info">
+                        <div class="attack-status" id="attack-modal-status">Select territories to attack</div>
+                    </div>
+                    
+                    <!-- Step 1: Territory Selection Display -->
+                    <div class="attack-selection" id="attack-modal-selection">
+                        <div class="attack-territory">
+                            <div class="territory-label">🗡️ Attacking From</div>
+                            <div class="territory-name" id="attack-modal-attacking-name">-</div>
+                            <div class="territory-armies" id="attack-modal-attacking-armies">0 armies</div>
+                        </div>
+                        <div class="attack-vs">VS</div>
+                        <div class="defend-territory">
+                            <div class="territory-label">🛡️ Defending</div>
+                            <div class="territory-name" id="attack-modal-defending-name">Select target</div>
+                            <div class="territory-armies" id="attack-modal-defending-armies">0 armies</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Direct Army Input Controls -->
+                    <div class="army-input" id="attack-modal-army-input" style="display: none; background: rgba(255,255,255,0.9); border-radius: 8px; padding: 15px; margin: 15px 0; border: 1px solid rgba(0,0,0,0.1);">
+                        <div style="margin-bottom: 10px; text-align: center; font-weight: bold; color: #333;">Enter armies remaining after battle</div>
+                        <div class="army-controls" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #2196f3;">Attacker Remaining Armies:</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button type="button" style="width: 36px; height: 36px; border: 1px solid #ced4da; background: #fff; border-radius: 4px; cursor: pointer; font-size: 18px; font-weight: bold;" 
+                                        onclick="const attackerInput = document.getElementById('attack-modal-attacker-armies-input'); if(parseInt(attackerInput.value) > parseInt(attackerInput.min)) attackerInput.value = parseInt(attackerInput.value) - 1;">−</button>
+                                <input type="number" id="attack-modal-attacker-armies-input" min="1" value="1" 
+                                       style="flex: 1; height: 36px; text-align: center; border: 2px solid #2196f3; border-radius: 4px; font-size: 16px; font-weight: bold;" class="army-input-field">
+                                <button type="button" style="width: 36px; height: 36px; border: 1px solid #ced4da; background: #fff; border-radius: 4px; cursor: pointer; font-size: 18px; font-weight: bold;" 
+                                        onclick="const attackerInput2 = document.getElementById('attack-modal-attacker-armies-input'); if(parseInt(attackerInput2.value) < parseInt(attackerInput2.max)) attackerInput2.value = parseInt(attackerInput2.value) + 1;">+</button>
+                            </div>
+                        </div>
+                        <div class="army-controls">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #f44336;">Defender Remaining Armies:</label>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button type="button" style="width: 36px; height: 36px; border: 1px solid #ced4da; background: #fff; border-radius: 4px; cursor: pointer; font-size: 18px; font-weight: bold;" 
+                                        onclick="const defenderInput = document.getElementById('attack-modal-defender-armies-input'); if(parseInt(defenderInput.value) > parseInt(defenderInput.min)) defenderInput.value = parseInt(defenderInput.value) - 1;">−</button>
+                                <input type="number" id="attack-modal-defender-armies-input" min="0" value="0" 
+                                       style="flex: 1; height: 36px; text-align: center; border: 2px solid #f44336; border-radius: 4px; font-size: 16px; font-weight: bold;" class="army-input-field">
+                                <button type="button" style="width: 36px; height: 36px; border: 1px solid #ced4da; background: #fff; border-radius: 4px; cursor: pointer; font-size: 18px; font-weight: bold;" 
+                                        onclick="const defenderInput2 = document.getElementById('attack-modal-defender-armies-input'); if(parseInt(defenderInput2.value) < parseInt(defenderInput2.max)) defenderInput2.value = parseInt(defenderInput2.value) + 1;">+</button>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.8em; color: #666; font-style: italic;">Set to 0 to conquer the territory</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Attack Execution Button -->
+                    <button class="attack-btn" id="attack-modal-execute" onclick="const combatUI = window.combatUI || window['combatUI']; if(combatUI && typeof combatUI.executeAttack === 'function') { combatUI.executeAttack(); } else { console.warn('CombatUI executeAttack not available, trying legacy'); window.executeAttack(); }" style="display: none;">
+                        ⚔️ COMMENCE BATTLE!
+                    </button>
+
+                    <!-- Step 4: Combat Results Display -->
+                    <div class="combat-results" id="attack-modal-results" style="display: none;">
+                        <h5>⚔️ Battle Results</h5>
+                        <div class="losses-display">
+                            <div class="losses-group">
+                                <div><strong>Attacker Losses</strong></div>
+                                <div class="losses-display" id="attack-modal-attacker-losses"></div>
+                            </div>
+                            <div class="losses-group">
+                                <div><strong>Defender Losses</strong></div>
+                                <div class="losses-display" id="attack-modal-defender-losses"></div>
+                            </div>
+                        </div>
+                        <div class="battle-result" id="attack-modal-battle-result"></div>
+                        
+                        <!-- Step 5: Post-Combat Decisions -->
+                        <div class="attack-options" style="margin-top: 15px;">
+                            <button class="attack-btn" id="attack-modal-continue" onclick="window.continueAttack()" style="display: none; background: #28a745;">
+                                ⚔️ Continue Attack
+                            </button>
+                            <button class="attack-btn" id="attack-modal-end" onclick="window.endAttack()" style="background: #6c757d;">
+                                ✋ End Attack
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Reset Attack Button -->
+                    <button class="attack-btn" id="attack-modal-reset" onclick="window.resetAttackState()" style="display: none; background: #ffc107; color: #000; margin-top: 10px;">
+                        🔄 Select New Territories
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="map-container">
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoom-in">+</button>
+                <button class="zoom-btn" id="zoom-out">−</button>
+                <button class="zoom-btn" id="reset-zoom">Reset</button>
+            </div>
+            <button class="end-turn-btn phase-deploy" id="end-turn" disabled>Deploy Armies</button>
+            <svg id="risk-map" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+                        <feOffset dx="1" dy="1"/>
+                        <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <!-- Background -->
+                <rect width="100%" height="100%" fill="#e8f4f8"/>
+                <!-- Continents -->
+                <g class="map-group">
+                    <g id="north-america" class="continent continent-na" filter="url(#drop-shadow)"></g>
+                    <g id="south-america" class="continent continent-sa" filter="url(#drop-shadow)"></g>
+                    <g id="europe" class="continent continent-eu" filter="url(#drop-shadow)"></g>
+                    <g id="africa" class="continent continent-af" filter="url(#drop-shadow)"></g>
+                    <g id="asia" class="continent continent-as" filter="url(#drop-shadow)"></g>
+                    <g id="australia" class="continent continent-au" filter="url(#drop-shadow)"></g>
+                </g>
+            </svg>
+            <div class="tooltip"></div>
+            <div class="territory-tooltip"></div>
+        </div>
+    </div>
+
+    <!-- Load game scripts -->
+    <script>
+        /**
+         * RISK GAME DIGITAL EDITION - ARCHITECTURE OVERVIEW
+         * ================================================
+         * 
+         * This is a digital implementation of the classic Risk board game.
+         * 
+         * MAIN COMPONENTS:
+         * - game.html: Main game interface and UI logic
+         * - GameState.js: Core game state management
+         * - RiskUI.js: UI management and player interactions
+         * - RiskMap.js: SVG map rendering and territory interactions
+         * - PhaseManager.js: Game phase transitions
+         * - Various managers: Reinforcement, Fortification, Attack, etc.
+         * 
+         * KEY FEATURES:
+         * - Modal-based attack system with dice rolling
+         * - Army transfer system following official Risk rules
+         * - Real-time territory ownership visualization
+         * - Player color customization
+         * - Phase-based gameplay (Deploy → Attack → Fortify)
+         * 
+         * DATA FLOW:
+         * 1. User interactions → RiskUI.js → GameState.js
+         * 2. GameState updates → UI updates via event system
+         * 3. Map interactions → RiskMap.js → game.html handlers
+         * 
+         * ERROR HANDLING:
+         * - All DOM access uses GameUtils.safeGetElement()
+         * - Game state access validated before operations
+         * - Comprehensive null checks throughout
+         */
+
+        /**
+         * Utility Functions for Safe DOM Access and Error Handling
+         * Provides standardized methods for DOM manipulation and game state access
+         */
+        window.GameUtils = {
+            /**
+             * Safe DOM element retrieval with optional logging
+             * @param {string} id - Element ID to retrieve
+             * @param {boolean} warnOnMissing - Whether to log warning if element not found
+             * @returns {HTMLElement|null} - Found element or null
+             */
+            safeGetElement: function(id, warnOnMissing = true) {
+                const element = document.getElementById(id);
+                if (!element && warnOnMissing) {
+                    console.warn(`Element not found: ${id}`);
+                }
+                return element;
+            },
+
+            /**
+             * Safe element class manipulation
+             * @param {string|HTMLElement} elementOrId - Element or element ID
+             * @param {string} className - CSS class name to toggle
+             * @param {boolean|null} force - Force add/remove (true/false) or toggle (null)
+             * @returns {boolean} - Success status
+             */
+            safeToggleClass: function(elementOrId, className, force = null) {
+                const element = typeof elementOrId === 'string' 
+                    ? this.safeGetElement(elementOrId, false) 
+                    : elementOrId;
+                
+                if (element && element.classList) {
+                    if (force !== null) {
+                        element.classList.toggle(className, force);
+                    } else {
+                        element.classList.toggle(className);
+                    }
+                    return true;
+                }
+                return false;
+            },
+
+            /**
+             * Safe property setting on DOM elements
+             * @param {string|HTMLElement} elementOrId - Element or element ID
+             * @param {string} property - Property name to set
+             * @param {any} value - Value to set
+             * @returns {boolean} - Success status
+             */
+            safeSetProperty: function(elementOrId, property, value) {
+                const element = typeof elementOrId === 'string' 
+                    ? this.safeGetElement(elementOrId, false) 
+                    : elementOrId;
+                
+                if (element && property in element) {
+                    element[property] = value;
+                    return true;
+                }
+                return false;
+            },
+
+            // Safe function execution with error handling
+            safeExecute: function(fn, context = null, ...args) {
+                try {
+                    if (typeof fn === 'function') {
+                        return fn.apply(context, args);
+                    } else if (typeof fn === 'string' && context && typeof context[fn] === 'function') {
+                        return context[fn].apply(context, args);
+                    }
+                } catch (error) {
+                    console.error('Error executing function:', error);
+                }
+                return null;
+            },
+
+            // Get game state from multiple possible sources
+            getGameState: function() {
+                return window.riskUI?.gameState || 
+                       window.gameState || 
+                       window.GameState || 
+                       null;
+            },
+
+            // Validate game state before operations
+            validateGameState: function() {
+                const gameState = this.getGameState();
+                if (!gameState) {
+                    console.warn('Game state not available');
+                    return false;
+                }
+                return true;
+            },
+
+            /**
+             * Enhanced safe element update helper
+             * @param {string} elementId - Element ID to update
+             * @param {string} property - Property to set (textContent, innerHTML, etc.)
+             * @param {any} value - Value to set
+             * @returns {boolean} - Success status
+             */
+            safeUpdateElement: function(elementId, property, value) {
+                return this.safeSetProperty(elementId, property, value);
+            },
+
+            /**
+             * Safe event listener attachment
+             * @param {string} elementId - Element ID to attach event to
+             * @param {string} event - Event type (click, change, etc.)
+             * @param {Function} handler - Event handler function
+             * @returns {boolean} - Success status
+             */
+            safeAddEventListener: function(elementId, event, handler) {
+                const element = this.safeGetElement(elementId, false);
+                if (element && typeof handler === 'function') {
+                    element.addEventListener(event, handler);
+                    return true;
+                }
+                return false;
+            },
+
+            /**
+             * Safe style property setting
+             * @param {string} elementId - Element ID to style
+             * @param {string} property - CSS property to set
+             * @param {string} value - CSS value to set
+             * @returns {boolean} - Success status
+             */
+            safeSetStyle: function(elementId, property, value) {
+                const element = this.safeGetElement(elementId, false);
+                if (element && element.style) {
+                    element.style[property] = value;
+                    return true;
+                }
+                return false;
+            },
+
+            /**
+             * Safe display toggle (show/hide elements)
+             * @param {string} elementId - Element ID to toggle
+             * @param {boolean} show - True to show, false to hide
+             * @returns {boolean} - Success status
+             */
+            safeToggleDisplay: function(elementId, show) {
+                return this.safeSetStyle(elementId, 'display', show ? 'block' : 'none');
+            },
+
+            /**
+             * Safe function execution with try-catch
+             * @param {Function} fn - Function to execute safely
+             * @returns {any} - Function result or false on error
+             */
+            safeCall: function(fn) {
+                try {
+                    return fn();
+                } catch (error) {
+                    console.warn('safeCall failed:', error);
+                    return false;
+                }
+            },
+
+            /**
+             * Safe phase display update
+             * Safely calls the PhaseManager's updatePhaseDisplay method
+             * @returns {boolean} - Success status
+             */
+            safeUpdatePhaseDisplay: function() {
+                return this.safeCall(() => {
+                    if (window.riskUI?.phaseManager?.updatePhaseDisplay) {
+                        window.riskUI.phaseManager.updatePhaseDisplay();
+                        return true;
+                    }
+                    return false;
+                });
+            }
+        };
+
+        /* ===============================================
+         * COMBAT SYSTEM INTEGRATION STATUS
+         * ===============================================
+         * 
+         * ✅ NEW COMBAT SYSTEM ACTIVE:
+         * - CombatSystem.js: Clean OOP combat logic
+         * - CombatIntegration.js: UI integration layer
+         * - combat-system.css: Modern combat styling
+         * - PhaseManager.js: Updated with combat integration
+         * 
+         * ⚠️  LEGACY CODE BELOW (DEPRECATED):
+         * The functions below are legacy attack system code.
+         * They are kept for backward compatibility but are
+         * no longer used in the active game flow.
+         * 
+         * Active Combat Flow:
+         * Territory Click → handleTerritoryClick() → CombatUI → CombatSystem
+         * 
+         * Legacy functions marked for future removal:
+         * - window.attackState (replaced by CombatSystem state)
+         * - executeAttack() (replaced by executeCombatBattle())
+         * - performSimpleCombat() (replaced by CombatSystem.executeBattle())
+         * - All attack modal functions (replaced by dynamic combat panels)
+         * 
+                 * =============================================== */
+        
+        // Global wrapper functions for backward compatibility
+        window.updatePhaseDisplay = function(phase) {
+            return GameUtils.safeUpdatePhaseDisplay();
+        };
+        
+        // Phase control wrapper functions
+        window.startAttackPhase = function() {
+            return GameUtils.safeCall(() => {
+                if (window.riskUI?.phaseManager?.setPhase) {
+                    window.riskUI.phaseManager.setPhase('attack');
+                    return true;
+                }
+                return false;
+            });
+        };
+        
+        window.endAttackPhase = function() {
+            return GameUtils.safeCall(() => {
+                if (window.riskUI?.phaseManager?.advancePhase) {
+                    window.riskUI.phaseManager.advancePhase();
+                    return true;
+                }
+                return false;
+            });
+        };
+        
+        window.skipAttackPhase = function() {
+            return GameUtils.safeCall(() => {
+                if (window.riskUI?.phaseManager?.skipPhase) {
+                    window.riskUI.phaseManager.skipPhase();
+                    return true;
+                }
+                return false;
+            });
+        };
+        
+        // Function to load scripts in sequence
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error(`Failed to load ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        // Initialize game once everything is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            let playerCount = 0;
+            let players = [];
+
+            // First, try to get player data from sessionStorage (from index.html)
+            const storedPlayers = sessionStorage.getItem('riskPlayers');
+            const storedColors = sessionStorage.getItem('riskPlayerColors');
+            const storedPlayerCount = sessionStorage.getItem('numPlayers');
+            
+            if (storedPlayers && storedPlayerCount) {
+                // Use sessionStorage data
+                const playerNames = JSON.parse(storedPlayers);
+                const playerColors = storedColors ? JSON.parse(storedColors) : [];
+                playerCount = parseInt(storedPlayerCount);
+                
+                // GameState expects separate arrays for names and colors
+                players = playerNames; // Array of player names (strings)
+                window.playerColors = playerColors; // Store colors separately for GameState constructor
+            } else {
+                // Fall back to URL parameters
+                const params = new URLSearchParams(window.location.search);
+                playerCount = parseInt(params.get('playerCount'));
+                
+                // Collect player data from URL parameters
+                if (!isNaN(playerCount) && playerCount >= 2) {
+                    const playerNames = [];
+                    const playerColors = [];
+                    for (let i = 1; i <= playerCount; i++) {
+                        const name = params.get(`player${i}`);
+                        const color = decodeURIComponent(params.get(`color${i}`));
+                        playerNames.push(name);
+                        playerColors.push(color);
+                    }
+                    players = playerNames;
+                    window.playerColors = playerColors;
+                }
+            }
+            
+            // Validate playerCount
+            if (isNaN(playerCount) || playerCount < 2) {
+                document.querySelector('.map-container').innerHTML = `
+                    <div style="color: red; padding: 20px;">
+                        Error: Invalid or missing player count in URL.<br>
+                        Please start the game with at least 2 players.
+                    </div>
+                `;
+                return;
+            }
+
+            // Load all required scripts in sequence
+            loadScript('js/mapData.js')
+                .then(() => loadScript('js/territory-paths.js'))
+                .then(() => loadScript('js/ColorManager.js'))
+                .then(() => loadScript('js/EnhancedTooltip.js'))
+                .then(() => loadScript('js/DirectCombat.js'))
+                .then(() => loadScript('js/attackLogic.js'))
+                .then(() => loadScript('js/ReinforcementManager.js'))
+                .then(() => loadScript('js/FortificationManager.js'))
+                .then(() => loadScript('js/GameState.js'))
+                .then(() => loadScript('js/GameStateManager.js'))
+                .then(() => loadScript('js/ValidationManager.js'))
+                .then(() => loadScript('js/CombatSystem.js'))
+                .then(() => loadScript('js/CombatAnimations.js'))
+                .then(() => loadScript('js/CombatUI.js'))
+                .then(() => loadScript('js/CombatEnhancements.js'))
+                .then(() => loadScript('js/CombatEnhancedIntegration.js'))
+                .then(() => loadScript('js/CombatTester.js'))
+                .then(() => loadScript('js/PhaseManager.js'))
+                .then(() => loadScript('js/TurnManager.js'))
+                .then(() => loadScript('js/RiskUI.js'))
+                .then(() => loadScript('js/RiskUI.AttackExtension.js'))
+                .then(() => loadScript('js/CombatIntegration.js'))
+                .then(() => loadScript('js/RiskMap.js'))
+                .then(() => loadScript('js/RiskGame.js'))
+                .then(() => loadScript('js/AttackManager.js'))
+                .then(() => loadScript('js/AttackManager.integration.js'))
+                .then(() => loadScript('js/AttackPathVisualizer.js'))
+                .then(() => loadScript('js/EnhancedAttackUI.js'))
+                .then(() => loadScript('js/EnhancedAttackUI.integration.js'))
+                .then(() => {
+                    // Verify required data is loaded
+                    if (typeof mapData === 'undefined' || typeof territoryPaths === 'undefined') {
+                        throw new Error('Required game data not loaded');
+                    }
+
+                    // Log army count information
+                    console.log("Risk Game - Official Army Count Rules:");
+                    console.log("2 players: 40 armies each");
+                    console.log("3 players: 35 armies each");
+                    console.log("4 players: 30 armies each");
+                    console.log("5 players: 25 armies each");
+                    console.log("6 players: 20 armies each");
+
+                    // Pre-initialize attack modal elements
+                    function ensureAttackModalElements() {
+                        const attackModal = document.getElementById('attack-modal');
+                        if (!attackModal) {
+                            console.error('❌ Cannot pre-initialize: Attack modal not found');
+                            return;
+                        }
+                        
+                        // Find or create critical elements
+                        const modalContent = attackModal.querySelector('.modal-content');
+                        if (!modalContent) return;
+                        
+                        // Find or create attack-selection container
+                        let attackSelection = attackModal.querySelector('#attack-modal-selection');
+                        if (!attackSelection) {
+                            attackSelection = document.createElement('div');
+                            attackSelection.id = 'attack-modal-selection';
+                            attackSelection.className = 'attack-selection';
+                            modalContent.appendChild(attackSelection);
+                        }
+                        
+                        // Ensure attack territory container exists
+                        let attackTerritory = attackSelection.querySelector('.attack-territory');
+                        if (!attackTerritory) {
+                            attackTerritory = document.createElement('div');
+                            attackTerritory.className = 'attack-territory';
+                            attackSelection.appendChild(attackTerritory);
+                            
+                            const label = document.createElement('div');
+                            label.className = 'territory-label';
+                            label.textContent = '🗡️ Attacking From';
+                            attackTerritory.appendChild(label);
+                            
+                            const separator = document.createElement('div');
+                            separator.className = 'attack-vs';
+                            separator.textContent = 'VS';
+                            attackSelection.appendChild(separator);
+                        }
+                        
+                        // Ensure defend territory container exists
+                        let defendTerritory = attackSelection.querySelector('.defend-territory');
+                        if (!defendTerritory) {
+                            defendTerritory = document.createElement('div');
+                            defendTerritory.className = 'defend-territory';
+                            attackSelection.appendChild(defendTerritory);
+                            
+                            const label = document.createElement('div');
+                            label.className = 'territory-label';
+                            label.textContent = '🛡️ Defending';
+                            defendTerritory.appendChild(label);
+                        }
+                        
+                        // Create critical elements if missing
+                        const criticalElements = [
+                            { id: 'attack-modal-attacking-name', parent: attackTerritory, className: 'territory-name', text: '-' },
+                            { id: 'attack-modal-attacking-armies', parent: attackTerritory, className: 'territory-armies', text: '0 armies' },
+                            { id: 'attack-modal-defending-name', parent: defendTerritory, className: 'territory-name', text: 'Select target' },
+                            { id: 'attack-modal-defending-armies', parent: defendTerritory, className: 'territory-armies', text: '0 armies' }
+                        ];
+                        
+                        criticalElements.forEach(el => {
+                            if (!document.getElementById(el.id)) {
+                                const newElement = document.createElement('div');
+                                newElement.id = el.id;
+                                newElement.className = el.className;
+                                newElement.textContent = el.text;
+                                el.parent.appendChild(newElement);
+                                console.log(`⚡ Pre-initialized element: ${el.id}`);
+                            }
+                        });
+                        
+                        console.log('✅ Attack modal elements pre-initialized');
+                    }
+                    
+                    // Pre-initialize critical elements
+                    ensureAttackModalElements();
+                    
+                    // Initialize game components in the correct order
+                    const riskUI = new RiskUI();
+                    riskUI.initGame(players, window.playerColors || []);
+                    
+                    // Make riskUI globally available before initializing Combat System
+                    window.riskUI = riskUI;
+                    
+                    // Initialize Combat System after riskUI is available
+                    setTimeout(() => {
+                        // Double-check critical elements are ready
+                        ensureAttackModalElements();
+                        
+                        const combatInitialized = initializeCombatSystem();
+                        if (!combatInitialized) {
+                            console.error('Failed to initialize combat system');
+                        } else {
+                            console.log('✅ Combat System initialized successfully');
+                            
+                            // Ensure combatUI is available globally after a short delay for UI creation
+                            setTimeout(() => {
+                                if (window.combatUI) {
+                                    console.log('✅ CombatUI globally available');
+                                } else {
+                                    console.warn('⚠️ CombatUI not globally available yet');
+                                }
+                            }, 1200); // Allow time for CombatUI initialization
+                        }
+                        
+                        // Initialize Direct Combat system with additional delay to ensure DirectCombat.js is loaded
+                        setTimeout(() => {
+                            if (window.initializeAttackSystem && !window.directCombatInitialized) {
+                                window.directCombatInitialized = true;
+                                window.initializeAttackSystem();
+                            }
+                        }, 500); // Additional delay for DirectCombat initialization
+                    }, 100);
+                    
+                    // Distribute territories randomly among players
+                    riskUI.gameState.assignTerritoriesRandomly();
+                    
+                    // Update PhaseManager after territory distribution
+                    riskUI.phaseManager.syncWithGameState();
+                    riskUI.updatePlayerStats();
+                    
+                    const riskMap = new RiskMap(riskUI);
+                    const riskGame = new RiskGame(riskUI, riskMap);
+
+                    // Store references globally if needed
+                    window.gameState = riskUI.gameState;
+                    window.riskUI = riskUI;
+                    window.riskMap = riskMap;
+                    window.riskGame = riskGame;
+                })
+                .catch(error => {
+                    console.error('Failed to initialize game:', error);
+                    document.querySelector('.map-container').innerHTML = `
+                        <div style="color: red; padding: 20px;">
+                            Error loading game data: ${error.message}<br>
+                            Please refresh the page.
+                        </div>
+                    `;
+                });
+                
+                // Setup Rules Modal functionality
+                const rulesBtn = document.getElementById('rules-btn');
+                const rulesModal = document.getElementById('rules-modal');
+                const closeRules = rulesModal.querySelector('.close');
+                
+                if (rulesBtn && rulesModal && closeRules) {
+                    // Open modal when button is clicked
+                    rulesBtn.addEventListener('click', () => {
+                        rulesModal.style.display = 'block';
+                    });
+                    
+                    // Close modal when X is clicked
+                    closeRules.addEventListener('click', () => {
+                        rulesModal.style.display = 'none';
+                    });
+                    
+                    // Close modal when clicking outside the content
+                    window.addEventListener('click', (event) => {
+                        if (event.target === rulesModal) {
+                            rulesModal.style.display = 'none';
+                        }
+                    });
+                }
+        });
+
+        /**
+         * Attack Modal Functions
+         * Handle opening and managing the attack modal window
+         */
+        
+        /**
+         * Opens the attack modal window for territory battles
+         */
+        window.openAttackModal = function() {
+            const modal = window.GameUtils.safeGetElement('attack-modal');
+            if (!modal) return;
+            
+            window.GameUtils.safeSetProperty(modal.style, 'display', 'flex');
+            
+            // Update modal with current attacking territory
+            if (window.attackState.attackingTerritory) {
+                const gameState = window.GameUtils.getGameState();
+                if (!gameState) return;
+                
+                const territory = gameState.territories[window.attackState.attackingTerritory];
+                if (territory) {
+                    window.GameUtils.safeSetProperty('attack-modal-attacking-name', 'textContent', 
+                        window.attackState.attackingTerritory.replace(/-/g, ' ').toUpperCase());
+                    window.GameUtils.safeSetProperty('attack-modal-attacking-armies', 'textContent', 
+                        `${territory.armies} armies`);
+                    
+                    // Show selection UI and highlight valid targets
+                    window.GameUtils.safeExecute(window.highlightValidTargets, null, window.attackState.attackingTerritory);
+                    window.GameUtils.safeSetProperty('attack-modal-status', 'innerHTML', 
+                        '<strong>Click on an adjacent enemy territory</strong> on the map to select your target');
+                    
+                    // Add helpful instruction
+                    const statusElement = window.GameUtils.safeGetElement('attack-modal-status', false);
+                    if (statusElement) {
+                        statusElement.innerHTML += '<br><small style="color: #666;">💡 Valid targets are highlighted in orange on the map</small>';
+                    }
+                }
+            }
+        };
+
+        window.closeAttackModal = function() {
+            const modal = document.getElementById('attack-modal');
+            if (!modal) return;
+            
+            modal.style.display = 'none';
+            window.clearAttackHighlights();
+            
+            // Reset modal state but keep attacking territory selected using safe DOM access
+            window.GameUtils.safeSetStyle('attack-modal-dice-selection', 'display', 'none');
+            window.GameUtils.safeSetStyle('attack-modal-execute', 'display', 'none');
+            window.GameUtils.safeSetStyle('attack-modal-results', 'display', 'none');
+            window.GameUtils.safeSetStyle('attack-modal-reset', 'display', 'none');
+        };
+
+        window.showAttackButton = function(territoryId) {
+            const container = document.getElementById('attack-button-container');
+            const territoryInfo = document.getElementById('selected-attacking-territory');
+            
+            if (!container || !territoryInfo) return;
+            
+            const territory = window.riskUI.gameState.territories[territoryId];
+            territoryInfo.textContent = `${territoryId} (${territory.armies} armies)`;
+            container.style.display = 'block';
+        };
+
+        window.hideAttackButton = function() {
+            const container = document.getElementById('attack-button-container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        };
+
+        /**
+         * Show attack message to user with safe DOM access
+         * @param {string} message - Message to display
+         * @param {string} type - Message type ('info', 'error', 'success')
+         */
+        window.showAttackMessage = function(message, type = 'info') {
+            // Try to update the attack modal status first
+            const statusElement = window.GameUtils.safeGetElement('attack-modal-status', false);
+            if (statusElement) {
+                const typeColors = {
+                    'error': '#d32f2f',
+                    'success': '#388e3c',
+                    'info': '#1976d2'
+                };
+                statusElement.innerHTML = `<span style="color: ${typeColors[type] || typeColors.info}">${message}</span>`;
+                return;
+            }
+            
+            // Fallback to console logging if no UI element available
+            console.log(`Attack Message (${type}): ${message}`);
+        };
+
+        // Enhanced Attack Phase Functions
+        window.attackState = {
+            attackingTerritory: null,
+            defendingTerritory: null,
+            attackerRemaining: 1,
+            defenderRemaining: 1,
+            maxAttackerArmies: 1,
+            maxDefenderArmies: 1,
+            directCombat: null,
+            step: 1 // Track current step in attack process
+        };
+        
+        // Ensure attackState is available globally
+        if (!window.attackState) {
+            window.attackState = {
+                attackingTerritory: null,
+                defendingTerritory: null,
+                attackerRemaining: 1,
+                defenderRemaining: 1,
+                maxAttackerArmies: 1,
+                maxDefenderArmies: 1,
+                directCombat: null,
+                step: 1
+            };
+        }
+
+        // Initialize direct combat system when available
+        window.initializeAttackSystem = function() {
+            // First check if DirectCombat instance already exists
+            if (typeof window.directCombat !== 'undefined' && window.directCombat) {
+                window.attackState.directCombat = window.directCombat;
+                console.log('✅ Direct Combat system initialized (using existing instance)');
+                return true;
+            }
+            
+            // If instance doesn't exist, try to create one
+            if (typeof DirectCombat === 'function') {
+                try {
+                    window.directCombat = new DirectCombat();
+                    window.attackState.directCombat = window.directCombat;
+                    console.log('✅ Direct Combat system initialized (created new instance)');
+                    return true;
+                } catch (err) {
+                    console.error('Failed to create DirectCombat instance:', err);
+                    return false;
+                }
+            }
+            
+            // If DirectCombat class is not available, wait and try again
+            console.warn('DirectCombat class not available, retrying in 1 second...');
+            setTimeout(() => {
+                if (!window.directCombatInitialized) {
+                    window.initializeAttackSystem();
+                }
+            }, 1000);
+            
+            return false;
+        };
+        
+        // Flag to track if DirectCombat has been initialized
+        window.directCombatInitialized = false;
+
+        // This function is no longer needed with direct army input
+        window.adjustAttackerArmies = function() {
+            // Function has been replaced by direct input in the UI
+        };
+
+        // LEGACY FUNCTION - DISABLED: Use CombatUI.executeAttack() instead
+        window.executeAttack = function() {
+            console.warn('Legacy executeAttack() called - redirecting to CombatUI system');
+            console.log('DEBUG: window.combatUI exists:', !!window.combatUI);
+            console.log('DEBUG: typeof window.combatUI:', typeof window.combatUI);
+            console.log('DEBUG: window.combatUI.executeAttack exists:', !!(window.combatUI && window.combatUI.executeAttack));
+            
+            // Try different access methods
+            const combatUI = window.combatUI || window['combatUI'];
+            console.log('DEBUG: combatUI via fallback:', !!combatUI);
+            
+            if (combatUI && typeof combatUI.executeAttack === 'function') {
+                console.log('Calling combatUI.executeAttack()');
+                return combatUI.executeAttack();
+            } else if (combatUI) {
+                // Try to access method from prototype
+                const proto = Object.getPrototypeOf(combatUI);
+                console.log('DEBUG: CombatUI prototype methods:', Object.getOwnPropertyNames(proto).filter(name => typeof proto[name] === 'function'));
+                
+                if (proto.executeAttack && typeof proto.executeAttack === 'function') {
+                    console.log('Calling executeAttack from prototype');
+                    return proto.executeAttack.call(combatUI);
+                } else {
+                    console.error('executeAttack method not found on CombatUI or its prototype');
+                    console.log('CombatUI own properties:', Object.getOwnPropertyNames(combatUI));
+                    window.showAttackMessage('❌ Combat system method not found!', 'error');
+                    return;
+                }
+            } else {
+                console.error('CombatUI not available - cannot execute attack');
+                console.log('Available on window:', Object.keys(window).filter(k => k.includes('combat')));
+                window.showAttackMessage('❌ Combat system not initialized!', 'error');
+                return;
+            }
+        };
+
+        // LEGACY FUNCTION - DISABLED: Use DirectCombat.determineBattleOutcome() instead
+        window.performDirectCombat = function(attackerArmies, defenderArmies, attackerRemaining, defenderRemaining) {
+            console.warn('Legacy performDirectCombat() called - use DirectCombat system instead');
+            if (window.directCombat) {
+                return window.directCombat.determineBattleOutcome(attackerArmies, defenderArmies, attackerRemaining, defenderRemaining);
+            }
+            return { success: false, error: 'DirectCombat system not available' };
+        };
+
+        // Display combat results in the UI
+        window.displayCombatResults = function(result) {
+            // Show results section
+            GameUtils.safeSetStyle('attack-modal-results', 'display', 'block');
+            
+            // Display battle result (no dice rolls for direct combat)
+            let resultMessage = `Attacker lost ${result.attackerLosses} armies, Defender lost ${result.defenderLosses} armies.`;
+            if (result.territoryConquered) {
+                resultMessage += '<br><strong>🏆 Territory Conquered!</strong>';
+            }
+            
+            GameUtils.safeSetProperty('attack-modal-battle-result', 'innerHTML', resultMessage);
+            
+            // Show continue/end options
+            if (result.territoryConquered) {
+                GameUtils.safeSetStyle('attack-modal-continue', 'display', 'none');
+                GameUtils.safeSetStyle('attack-modal-end', 'display', 'block');
+            } else {
+                // Check if attacker can continue
+                const canContinue = result.remainingAttackerArmies > 1;
+                GameUtils.safeSetStyle('attack-modal-continue', 'display', canContinue ? 'block' : 'none');
+                GameUtils.safeSetStyle('attack-modal-end', 'display', 'block');
+            }
+            
+            // Hide execute button
+            GameUtils.safeSetStyle('attack-modal-execute', 'display', 'none');
+        };
+
+        // Apply combat results to game state
+        window.applyCombatResults = function(result) {
+            const gameState = GameUtils.getGameState();
+            if (!gameState) return;
+            
+            const attackingTerr = gameState.territories[window.attackState.attackingTerritory];
+            const defendingTerr = gameState.territories[window.attackState.defendingTerritory];
+            
+            if (!attackingTerr || !defendingTerr) return;
+            
+            // Apply army losses
+            attackingTerr.armies = result.remainingAttackerArmies;
+            defendingTerr.armies = result.remainingDefenderArmies;
+            
+            // Handle territory conquest
+            if (result.territoryConquered) {
+                const previousOwner = defendingTerr.owner;
+                defendingTerr.owner = attackingTerr.owner;
+                
+                // Move minimum armies (equal to dice used in attack)
+                const minMove = window.attackState.attackerDice;
+                defendingTerr.armies = minMove;
+                attackingTerr.armies -= minMove;
+                
+                // Check for player elimination
+                window.checkPlayerElimination(previousOwner);
+                
+                // Open unit transfer modal for additional army movement
+                setTimeout(() => {
+                    const availableForTransfer = attackingTerr.armies - 1; // Must leave at least 1
+                    if (availableForTransfer > 0) {
+                        window.openTransferModal(
+                            window.attackState.attackingTerritory,
+                            window.attackState.defendingTerritory,
+                            availableForTransfer
+                        );
+                    }
+                }, 500);
+            }
+            
+            // Update UI displays
+            if (window.riskUI && window.riskUI.updateTerritoryDisplay) {
+                window.riskUI.updateTerritoryDisplay(window.attackState.attackingTerritory);
+                window.riskUI.updateTerritoryDisplay(window.attackState.defendingTerritory);
+            }
+            
+            // Update territory colors
+            if (result.territoryConquered) {
+                window.updateTerritoryOwnershipVisuals(window.attackState.defendingTerritory, attackingTerr.owner);
+            }
+        };
+
+        // Continue attack (reset for another round)
+        window.continueAttack = function() {
+            // Reset modal for next attack
+            GameUtils.safeSetStyle('attack-modal-results', 'display', 'none');
+            GameUtils.safeSetStyle('attack-modal-army-input', 'display', 'block');
+            GameUtils.safeSetStyle('attack-modal-execute', 'display', 'block');
+            
+            // Update army counts for next round
+            const gameState = GameUtils.getGameState();
+            if (gameState && window.attackState.attackingTerritory && window.attackState.defendingTerritory) {
+                const attackingTerr = gameState.territories[window.attackState.attackingTerritory];
+                const defendingTerr = gameState.territories[window.attackState.defendingTerritory];
+                
+                if (attackingTerr && defendingTerr) {
+                    // Set default values for army input fields
+                    const attackerInput = GameUtils.safeGetElement('attack-modal-attacker-armies-input', false);
+                    const defenderInput = GameUtils.safeGetElement('attack-modal-defender-armies-input', false);
+                    
+                    if (attackerInput) {
+                        attackerInput.min = 1;
+                        attackerInput.max = attackingTerr.armies;
+                        attackerInput.value = attackingTerr.armies;
+                    }
+                    
+                    if (defenderInput) {
+                        defenderInput.min = 0;
+                        defenderInput.max = defendingTerr.armies;
+                        defenderInput.value = defendingTerr.armies;
+                    }
+                    
+                    // Update territory army displays
+                    GameUtils.safeSetProperty('attack-modal-attacking-armies', 'textContent', `${attackingTerr.armies} armies`);
+                    GameUtils.safeSetProperty('attack-modal-defending-armies', 'textContent', `${defendingTerr.armies} armies`);
+                }
+            }
+            
+            window.showAttackMessage('⚔️ Ready for another battle!', 'info');
+        };
+
+        // End attack (close modal and reset)
+        window.endAttack = function() {
+            window.closeAttackModal();
+            window.resetAttackState();
+        };
+
+        // Enhanced show/hide attack panel with territory highlighting
+        window.updateAttackPanelVisibility = function() {
+            const attackPanel = document.getElementById('attack-panel');
+            if (!attackPanel) return;
+            
+            const currentPhase = (window.riskUI && window.riskUI.gameState) ? window.riskUI.gameState.phase : 'unknown';
+            
+            if (currentPhase === 'attack') {
+                attackPanel.classList.add('active');
+                window.highlightAttackableElements();
+            } else {
+                attackPanel.classList.remove('active');
+                window.clearAttackHighlights();
+                if (typeof window.resetAttackState === 'function') {
+                    window.resetAttackState();
+                }
+            }
+        };
+
+        // Highlight territories that can attack
+        window.highlightAttackableElements = function() {
+            if (!window.riskUI || !window.riskUI.gameState) return;
+            
+            const currentPlayer = window.riskUI.gameState.getCurrentPlayer();
+            const territories = window.riskUI.gameState.territories;
+            
+            Object.keys(territories).forEach(territoryId => {
+                const territory = territories[territoryId];
+                const element = document.getElementById(territoryId);
+                if (!element) return;
+                
+                // Remove existing attack highlights
+                element.classList.remove('highlight-attackable', 'highlight-attacking-from', 'highlight-valid-target');
+                
+                if (territory.owner === currentPlayer && territory.armies > 1) {
+                    element.classList.add('highlight-attackable');
+                }
+            });
+        };
+
+        // Clear all attack-related highlights
+        window.clearAttackHighlights = function() {
+            const territories = document.querySelectorAll('.territory');
+            territories.forEach(element => {
+                element.classList.remove(
+                    'highlight-attackable', 
+                    'highlight-attacking-from', 
+                    'highlight-valid-target',
+                    'highlight-selected-attacker',
+                    'highlight-selected-target'
+                );
+            });
+        };
+
+        // Enhanced reset attack state
+        window.resetAttackState = function() {
+            window.attackState.attackingTerritory = null;
+            window.attackState.defendingTerritory = null;
+            window.attackState.attackerDice = 1;
+            window.attackState.defenderDice = 1;
+            window.attackState.step = 1;
+            
+            // Hide attack button in sidebar
+            window.hideAttackButton();
+            
+            // Reset modal UI elements with safe property setting
+            window.GameUtils.safeSetProperty('attack-modal-status', 'innerHTML', 'Select territories to attack');
+            window.GameUtils.safeSetProperty('attack-modal-defending-name', 'textContent', 'Select target');
+            window.GameUtils.safeSetProperty('attack-modal-defending-armies', 'textContent', '0 armies');
+            
+            // Safe element display changes
+            const diceSelection = window.GameUtils.safeGetElement('attack-modal-dice-selection', false);
+            if (diceSelection) diceSelection.style.display = 'none';
+            
+            const executeBtn = window.GameUtils.safeGetElement('attack-modal-execute', false);
+            if (executeBtn) executeBtn.style.display = 'none';
+            
+            const resultsDiv = window.GameUtils.safeGetElement('attack-modal-results', false);
+            if (resultsDiv) resultsDiv.style.display = 'none';
+            
+            const resetBtn = window.GameUtils.safeGetElement('attack-modal-reset', false);
+            if (resetBtn) resetBtn.style.display = 'none';
+            
+            // Clear highlights and re-highlight attackable territories
+            window.clearAttackHighlights();
+            window.highlightAttackableElements();
+        };
+
+        // LEGACY FUNCTION - DISABLED: Use CombatUI.handleTerritoryClick() instead
+        window.selectAttackingTerritory = function(territoryId) {
+            console.warn('Legacy selectAttackingTerritory() called - using CombatUI system instead');
+            if (window.combatUI && window.combatUI.handleTerritoryClick) {
+                return window.combatUI.handleTerritoryClick(territoryId);
+            }
+            return false;
+        };
+
+        // Highlight territories that can be attacked from the selected territory
+        window.highlightValidTargets = function(attackingTerritoryId) {
+            if (!window.riskUI || !window.riskUI.gameState) return;
+            
+            const attackingTerritory = window.riskUI.gameState.territories[attackingTerritoryId];
+            const currentPlayer = window.riskUI.gameState.getCurrentPlayer();
+            
+            attackingTerritory.neighbors.forEach(neighborId => {
+                const neighbor = window.riskUI.gameState.territories[neighborId];
+                if (neighbor && neighbor.owner !== currentPlayer) {
+                    const element = document.getElementById(neighborId);
+                    if (element) {
+                        element.classList.add('highlight-valid-target');
+                    }
+                }
+            });
+        };
+
+        // Enhanced defending territory selection (for modal)
+        window.selectDefendingTerritory = function(territoryId) {
+            if (!window.riskUI || !window.riskUI.gameState || !window.attackState.attackingTerritory) return false;
+            
+            const attackingTerr = window.riskUI.gameState.territories[window.attackState.attackingTerritory];
+            const defendingTerr = window.riskUI.gameState.territories[territoryId];
+            const currentPlayer = window.riskUI.gameState.getCurrentPlayer();
+            
+            // Validate attack
+            if (defendingTerr.owner === currentPlayer) {
+                window.showAttackMessage('❌ Cannot attack your own territory!', 'error');
+                return false;
+            }
+            if (!attackingTerr.neighbors.includes(territoryId)) {
+                window.showAttackMessage('❌ Territories must be adjacent to attack!', 'error');
+                return false;
+            }
+            
+            // Update attack state
+            window.attackState.defendingTerritory = territoryId;
+            window.attackState.step = 3;
+            
+            // Update modal UI with safe property setting
+            window.GameUtils.safeSetProperty('attack-modal-defending-name', 'textContent', territoryId);
+            window.GameUtils.safeSetProperty('attack-modal-defending-armies', 'textContent', `${defendingTerr.armies} armies`);
+            window.GameUtils.safeSetProperty('attack-modal-status', 'innerHTML', '⚔️ <strong>Ready to battle!</strong> Enter the remaining armies and click Commence Battle.');
+            
+            // Show army input fields
+            const armyInput = window.GameUtils.safeGetElement('attack-modal-army-input', false);
+            if (armyInput) armyInput.style.display = 'block';
+            
+            // Set up army input fields
+            const attackerInput = window.GameUtils.safeGetElement('attack-modal-attacker-armies-input', false);
+            const defenderInput = window.GameUtils.safeGetElement('attack-modal-defender-armies-input', false);
+            
+            if (attackerInput) {
+                attackerInput.min = 1;
+                attackerInput.max = attackingTerr.armies;
+                attackerInput.value = attackingTerr.armies;
+            }
+            
+            if (defenderInput) {
+                defenderInput.min = 0;
+                defenderInput.max = defendingTerr.armies;
+                defenderInput.value = defenderInput.max;
+            }
+            
+            const executeBtn = window.GameUtils.safeGetElement('attack-modal-execute', false);
+            if (executeBtn) executeBtn.style.display = 'block';
+            
+            // Update territory highlights
+            window.clearAttackHighlights();
+            const attackingElement = window.GameUtils.safeGetElement(window.attackState.attackingTerritory, false);
+            if (attackingElement) attackingElement.classList.add('highlight-selected-attacker');
+            
+            const defendingElement = window.GameUtils.safeGetElement(territoryId, false);
+            if (defendingElement) defendingElement.classList.add('highlight-selected-target');
+            
+            return true;
+        };
+
+        // Enhanced reset attack state
+        window.resetAttackState = function() {
+            window.attackState.attackingTerritory = null;
+            window.attackState.defendingTerritory = null;
+            window.attackState.attackerDice = 1;
+            window.attackState.defenderDice = 1;
+            window.attackState.step = 1;
+            
+            // Hide attack button in sidebar
+            window.hideAttackButton();
+            
+            // Reset modal UI elements with safe property setting
+            window.GameUtils.safeSetProperty('attack-modal-status', 'innerHTML', 'Select territories to attack');
+            window.GameUtils.safeSetProperty('attack-modal-defending-name', 'textContent', 'Select target');
+            window.GameUtils.safeSetProperty('attack-modal-defending-armies', 'textContent', '0 armies');
+            
+            // Safe element display changes
+            const diceSelection = window.GameUtils.safeGetElement('attack-modal-dice-selection', false);
+            if (diceSelection) diceSelection.style.display = 'none';
+            
+            const executeBtn = window.GameUtils.safeGetElement('attack-modal-execute', false);
+            if (executeBtn) executeBtn.style.display = 'none';
+            
+            const resultsDiv = window.GameUtils.safeGetElement('attack-modal-results', false);
+            if (resultsDiv) resultsDiv.style.display = 'none';
+            
+            const resetBtn = window.GameUtils.safeGetElement('attack-modal-reset', false);
+            if (resetBtn) resetBtn.style.display = 'none';
+            
+            // Clear highlights and re-highlight attackable territories
+            window.clearAttackHighlights();
+            window.highlightAttackableElements();
+        };
+
+        // Territory click handler for attack phase
+        window.handleTerritoryClickForAttack = function(territoryId) {
+            if (!window.riskUI || !window.riskUI.gameState) return false;
+            
+            const currentPhase = window.riskUI.gameState.phase;
+            if (currentPhase !== 'attack') return false;
+            
+            const territory = window.riskUI.gameState.territories[territoryId];
+            const currentPlayer = window.riskUI.gameState.getCurrentPlayer();
+            
+            // If no attacking territory selected yet
+            if (!window.attackState.attackingTerritory) {
+                if (territory.owner === currentPlayer && territory.armies > 1) {
+                    return window.selectAttackingTerritory(territoryId);
+                } else {
+                    window.showAttackMessage('❌ Select your own territory with 2+ armies to attack from', 'error');
+                    return false;
+                }
+            }
+            // If attacking territory selected, now select defending territory
+            else if (!window.attackState.defendingTerritory) {
+                if (territory.owner !== currentPlayer) {
+                    return window.selectDefendingTerritory(territoryId);
+                } else {
+                    window.showAttackMessage('❌ You cannot attack your own territories', 'error');
+                    return false;
+                }
+            }
+            // Both territories selected, allow re-selection
+            else {
+                if (territory.owner === currentPlayer && territory.armies > 1) {
+                    // Switch to new attacking territory
+                    if (typeof window.resetAttackState === 'function') {
+                        window.resetAttackState();
+                    }
+                    return window.selectAttackingTerritory(territoryId);
+                } else if (territory.owner !== currentPlayer) {
+                    // Switch to new defending territory
+                    return window.selectDefendingTerritory(territoryId);
+                }
+            }
+            
+            return false;
+        };
+
+        // Battle Management System
+        window.battleState = {
+            attackingTerritory: null,
+            defendingTerritory: null,
+            initialAttackerArmies: 0,
+            initialDefenderArmies: 0,
+            minAttackerArmies: 1,
+            minDefenderArmies: 0
+        };
+
+        // Open battle management modal
+        window.openBattleModal = function(attackingTerritoryId, defendingTerritoryId) {
+            if (!window.riskUI || !window.riskUI.gameState) return;
+
+            const attackingTerr = window.riskUI.gameState.territories[attackingTerritoryId];
+            const defendingTerr = window.riskUI.gameState.territories[defendingTerritoryId];
+            
+            if (!attackingTerr || !defendingTerr) {
+                console.error('Territory data not found');
+                return;
+            }
+
+            // Store battle state
+            window.battleState.attackingTerritory = attackingTerritoryId;
+            window.battleState.defendingTerritory = defendingTerritoryId;
+            window.battleState.initialAttackerArmies = attackingTerr.armies;
+            window.battleState.initialDefenderArmies = defendingTerr.armies;
+            window.battleState.minAttackerArmies = 1; // Must leave at least 1 army
+            window.battleState.minDefenderArmies = 0; // Can be conquered
+
+            // Update modal display using safe DOM access
+            window.GameUtils.safeUpdateElement('battle-attacker-name', 'textContent', attackingTerritoryId.replace(/-/g, ' ').toUpperCase());
+            window.GameUtils.safeUpdateElement('battle-attacker-owner', 'textContent', `${attackingTerr.owner}`);
+            window.GameUtils.safeUpdateElement('battle-attacker-armies', 'textContent', `${attackingTerr.armies} armies`);
+            
+            window.GameUtils.safeUpdateElement('battle-defender-name', 'textContent', defendingTerritoryId.replace(/-/g, ' ').toUpperCase());
+            window.GameUtils.safeUpdateElement('battle-defender-owner', 'textContent', `${defendingTerr.owner}`);
+            window.GameUtils.safeUpdateElement('battle-defender-armies', 'textContent', `${defendingTerr.armies} armies`);
+
+            // Set up input constraints using safe property setting
+            window.GameUtils.safeSetProperty('attacker-remaining', 'min', window.battleState.minAttackerArmies);
+            window.GameUtils.safeSetProperty('attacker-remaining', 'max', window.battleState.initialAttackerArmies);
+            window.GameUtils.safeSetProperty('attacker-remaining', 'value', window.battleState.initialAttackerArmies);
+            
+            window.GameUtils.safeSetProperty('defender-remaining', 'min', window.battleState.minDefenderArmies);
+            window.GameUtils.safeSetProperty('defender-remaining', 'max', window.battleState.initialDefenderArmies);
+            window.GameUtils.safeSetProperty('defender-remaining', 'value', window.battleState.initialDefenderArmies);
+
+            // Update constraint labels using safe DOM access
+            window.GameUtils.safeUpdateElement('attacker-constraint', 'textContent', `Max: ${window.battleState.initialAttackerArmies} armies`);
+            window.GameUtils.safeUpdateElement('defender-constraint', 'textContent', `Max: ${window.battleState.initialDefenderArmies} armies`);
+
+            // Update preview
+            window.updateBattlePreview();
+
+            // Show modal using safe style setting
+            window.GameUtils.safeSetStyle('battle-modal', 'display', 'flex');
+        };
+
+        // Close battle management modal
+        window.closeBattleModal = function() {
+            window.GameUtils.safeSetStyle('battle-modal', 'display', 'none');
+            
+            // Reset battle state
+            window.battleState.attackingTerritory = null;
+            window.battleState.defendingTerritory = null;
+            window.battleState.initialAttackerArmies = 0;
+            window.battleState.initialDefenderArmies = 0;
+        };
+
+        // Adjust battle army counts
+        window.adjustBattleArmies = function(side, delta) {
+            const input = document.getElementById(side === 'attacker' ? 'attacker-remaining' : 'defender-remaining');
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = currentValue + delta;
+            
+            const min = parseInt(input.min);
+            const max = parseInt(input.max);
+            
+            if (newValue >= min && newValue <= max) {
+                input.value = newValue;
+                window.updateBattlePreview();
+            }
+        };
+
+        // Update battle preview
+        window.updateBattlePreview = function() {
+            // Get values using safe property access
+            const attackerElement = window.GameUtils.safeGetElement('attacker-remaining', false);
+            const defenderElement = window.GameUtils.safeGetElement('defender-remaining', false);
+            
+            const attackerRemaining = attackerElement ? parseInt(attackerElement.value) || window.battleState.minAttackerArmies : window.battleState.minAttackerArmies;
+            const defenderRemaining = defenderElement ? parseInt(defenderElement.value) || window.battleState.minDefenderArmies : window.battleState.minDefenderArmies;
+            
+            // Update preview display using safe DOM access
+            window.GameUtils.safeUpdateElement('preview-attacker-name', 'textContent', window.battleState.attackingTerritory ? 
+                window.battleState.attackingTerritory.replace(/-/g, ' ').toUpperCase() : 'Attacker');
+            window.GameUtils.safeUpdateElement('preview-attacker-armies', 'textContent', `${attackerRemaining} armies`);
+            
+            window.GameUtils.safeUpdateElement('preview-defender-name', 'textContent', window.battleState.defendingTerritory ? 
+                window.battleState.defendingTerritory.replace(/-/g, ' ').toUpperCase() : 'Defender');
+            window.GameUtils.safeUpdateElement('preview-defender-armies', 'textContent', `${defenderRemaining} armies`);
+            
+            // Show conquest indicator if defender will have 0 armies
+            window.GameUtils.safeSetStyle('battle-conquest', 'display', defenderRemaining === 0 ? 'block' : 'none');
+            
+            // Enable/disable resolve button based on valid inputs
+            const resolveBtn = window.GameUtils.safeGetElement('resolve-battle-btn', false);
+            const validInputs = attackerRemaining >= window.battleState.minAttackerArmies && 
+                               attackerRemaining <= window.battleState.initialAttackerArmies &&
+                               defenderRemaining >= window.battleState.minDefenderArmies && 
+                               defenderRemaining <= window.battleState.initialDefenderArmies;
+            
+            if (resolveBtn) resolveBtn.disabled = !validInputs;
+        };
+
+        /**
+         * Resolve battle with user input from battle modal
+         * Handles territory conquest, army transfers, and player elimination
+         */
+        window.resolveBattle = function() {
+            const gameState = window.GameUtils.getGameState();
+            if (!gameState || !window.battleState.attackingTerritory || !window.battleState.defendingTerritory) {
+                console.error('Invalid battle state');
+                return;
+            }
+            
+            // Get values using safe DOM access
+            const attackerElement = window.GameUtils.safeGetElement('attacker-remaining', false);
+            const defenderElement = window.GameUtils.safeGetElement('defender-remaining', false);
+            
+            const attackerRemaining = attackerElement ? parseInt(attackerElement.value) : window.battleState.minAttackerArmies;
+            const defenderRemaining = defenderElement ? parseInt(defenderElement.value) : window.battleState.minDefenderArmies;
+            
+            // Validate inputs
+            if (attackerRemaining < window.battleState.minAttackerArmies || 
+                attackerRemaining > window.battleState.initialAttackerArmies ||
+                defenderRemaining < window.battleState.minDefenderArmies || 
+                defenderRemaining > window.battleState.initialDefenderArmies) {
+                alert('Invalid army counts. Please check your inputs.');
+                return;
+            }
+            
+            const attackingTerr = gameState.territories[window.battleState.attackingTerritory];
+            const defendingTerr = gameState.territories[window.battleState.defendingTerritory];
+            
+            // Handle territory conquest first (before updating army counts)
+            let territoryConquered = false;
+            if (defenderRemaining === 0) {
+                const previousOwner = defendingTerr.owner;
+                territoryConquered = true;
+                
+                // Validate attacker has enough armies to conquer (must leave at least 1 army)
+                if (attackerRemaining < 2) {
+                    alert('Invalid conquest: Attacker must have at least 2 armies to conquer a territory (1 stays, 1 moves).');
+                    return;
+                }
+                
+                // Change territory ownership
+                defendingTerr.owner = attackingTerr.owner;
+                defendingTerr.armies = 1; // Start with 1 army (minimum occupation)
+                attackingTerr.armies = attackerRemaining; // Keep attacker armies for now (will be adjusted in transfer)
+                
+                console.log(`Territory ${window.battleState.defendingTerritory} conquered by ${attackingTerr.owner} from ${previousOwner}`);
+                
+                // Update territory colors and visuals immediately
+                window.updateTerritoryOwnershipVisuals(window.battleState.defendingTerritory, attackingTerr.owner);
+                
+                // Also try standard RiskUI methods as backup
+                if (window.riskUI) {
+                    if (window.riskUI.updateTerritoryOwner) {
+                        window.riskUI.updateTerritoryOwner(window.battleState.defendingTerritory, attackingTerr.owner);
+                    }
+                    if (window.riskUI.updateTerritoryDisplay) {
+                        window.riskUI.updateTerritoryDisplay(window.battleState.defendingTerritory);
+                    }
+                    if (window.riskUI.updateAllTerritoryVisuals) {
+                        window.riskUI.updateAllTerritoryVisuals();
+                    }
+                }
+                
+                // Check for player elimination
+                window.checkPlayerElimination(previousOwner);
+                
+                // Close battle modal
+                window.closeBattleModal();
+                
+                // Calculate available armies for transfer (must leave at least 1 in source)
+                const availableForTransfer = attackerRemaining - 1;
+                
+                // Open unit transfer modal
+                window.openTransferModal(
+                    window.battleState.attackingTerritory,
+                    window.battleState.defendingTerritory,
+                    availableForTransfer
+                );
+                
+                // Don't continue with normal flow - transfer modal will handle completion
+                return;
+                
+            } else {
+                // No conquest - just update army counts
+                attackingTerr.armies = attackerRemaining;
+                defendingTerr.armies = defenderRemaining;
+            }
+            
+            // Only execute this for non-conquest scenarios (conquest is handled by transfer modal)
+            if (!territoryConquered) {
+                // Update territory displays
+                if (window.riskUI && window.riskUI.updateTerritoryDisplay) {
+                    window.riskUI.updateTerritoryDisplay(window.battleState.attackingTerritory);
+                    window.riskUI.updateTerritoryDisplay(window.battleState.defendingTerritory);
+                }
+                
+                // Update UI
+                if (window.riskUI && window.riskUI.updateDisplay) {
+                    window.riskUI.updateDisplay();
+                }
+                
+                // Show result message
+                const resultMessage = `Battle resolved! Attacker: ${attackerRemaining} armies, Defender: ${defenderRemaining} armies remaining.`;
+                
+                // Close modal
+                window.closeBattleModal();
+                
+                // Reset attack state
+                window.resetAttackState();
+                
+                // Show success message
+                window.showAttackMessage(resultMessage, 'info');
+            }
+            
+            console.log('Battle resolved:', {
+                attacker: window.battleState.attackingTerritory,
+                defender: window.battleState.defendingTerritory,
+                attackerRemaining,
+                defenderRemaining,
+                territoryConquered
+            });
+        };
+
+        // Manually update territory color and visuals
+        window.updateTerritoryOwnershipVisuals = function(territoryId, newOwner) {
+            const territoryElement = window.GameUtils.safeGetElement(territoryId, false);
+            if (!territoryElement) return;
+            
+            // Update territory color using the user-selected colors from GameState
+            let playerColor = '#888888'; // default fallback
+            const gameState = window.GameUtils.getGameState();
+            
+            if (gameState && gameState.playerColors) {
+                playerColor = gameState.playerColors[newOwner] || playerColor;
+            } else if (window.riskUI && window.riskUI.colorManager) {
+                playerColor = window.riskUI.colorManager.getPlayerColor(newOwner);
+            } else if (window.riskUI && window.riskUI.getPlayerColor) {
+                playerColor = window.riskUI.getPlayerColor(newOwner);
+            }
+            
+            territoryElement.style.fill = playerColor;
+            
+            // Update data attribute
+            territoryElement.setAttribute('data-owner', newOwner);
+            
+            // Force visual refresh by updating army display
+            const territoryData = window.riskUI.gameState.territories[territoryId];
+            if (territoryData && window.riskUI.updateTerritoryArmies) {
+                window.riskUI.updateTerritoryArmies(territoryId, territoryData.armies);
+            }
+            
+            console.log(`Territory ${territoryId} visuals updated for new owner: ${newOwner} with color: ${playerColor}`);
+        };
+
+        // Check if a player has been eliminated
+        window.checkPlayerElimination = function(playerName) {
+            const gameState = window.GameUtils.getGameState();
+            if (!gameState) return;
+            
+            const territories = gameState.territories;
+            const hasTerritory = Object.values(territories).some(territory => territory.owner === playerName);
+            
+            if (!hasTerritory) {
+                console.log(`Player ${playerName} has been eliminated!`);
+                // Remove from active players if needed
+                if (window.riskUI.gameState.players) {
+                    const playerIndex = window.riskUI.gameState.players.indexOf(playerName);
+                    if (playerIndex > -1) {
+                        window.riskUI.gameState.players.splice(playerIndex, 1);
+                    }
+                }
+                
+                // Show elimination message
+                setTimeout(() => {
+                    alert(`Player ${playerName} has been eliminated from the game!`);
+                }, 500);
+            }
+        };
+
+        // Unit Transfer System
+        window.transferState = {
+            sourceTerritory: null,
+            destinationTerritory: null,
+            maxTransfer: 0,
+            currentTransfer: 1
+        };
+
+        /**
+         * Open unit transfer modal after conquest
+         * Implements official Risk rules for army transfers
+         * @param {string} sourceTerritory - Territory being transferred from
+         * @param {string} destinationTerritory - Territory being transferred to
+         * @param {number} availableArmies - Number of armies available for transfer
+         */
+        window.openTransferModal = function(sourceTerritory, destinationTerritory, availableArmies) {
+            const gameState = window.GameUtils.getGameState();
+            if (!gameState) return;
+
+            const sourceTerr = gameState.territories[sourceTerritory];
+            if (!sourceTerr) return;
+
+            // According to official Risk rules:
+            // - Minimum: You must move at least 1 army (since we can't track exact attack dice in manual battles)
+            // - Maximum: You can move up to all armies except 1 (which must stay in source territory)
+            const minTransfer = 1;
+            const maxTransfer = Math.min(availableArmies, sourceTerr.armies - 1);
+
+            // Set up transfer state
+            window.transferState.sourceTerritory = sourceTerritory;
+            window.transferState.destinationTerritory = destinationTerritory;
+            window.transferState.maxTransfer = maxTransfer;
+            window.transferState.minTransfer = minTransfer;
+            window.transferState.currentTransfer = minTransfer;
+
+            // Update modal display using safe DOM access
+            window.GameUtils.safeUpdateElement('transfer-source-name', 'textContent', sourceTerritory.replace(/-/g, ' ').toUpperCase());
+            window.GameUtils.safeUpdateElement('transfer-source-armies', 'textContent', `${sourceTerr.armies} armies (before transfer)`);
+            
+            window.GameUtils.safeUpdateElement('transfer-destination-name', 'textContent', destinationTerritory.replace(/-/g, ' ').toUpperCase());
+            window.GameUtils.safeUpdateElement('transfer-destination-armies', 'textContent', '1 army (minimum occupation)');
+
+            // Update constraints with official Risk rules explanation
+            window.GameUtils.safeUpdateElement('transfer-range', 'textContent', `You can transfer ${minTransfer}-${maxTransfer} armies`);
+            
+            // Update constraints text with Risk rules using safe DOM access
+            const constraintsList = window.GameUtils.safeGetElement('transfer-constraints ul', false);
+            if (!constraintsList) {
+                const constraintsContainer = document.querySelector('.transfer-constraints ul');
+                if (constraintsContainer) {
+                    constraintsContainer.innerHTML = `
+                        <li><strong>Minimum:</strong> ${minTransfer} army must move (Official Risk rule)</li>
+                        <li><strong>Maximum:</strong> ${maxTransfer} armies can move (must leave 1 in source)</li>
+                        <li><strong>Mandatory:</strong> You MUST move armies when conquering (Risk rule)</li>
+                    `;
+                }
+            }
+
+            // Set up slider and input using safe property setting
+            window.GameUtils.safeSetProperty('transfer-slider', 'min', minTransfer);
+            window.GameUtils.safeSetProperty('transfer-slider', 'max', maxTransfer);
+            window.GameUtils.safeSetProperty('transfer-slider', 'value', minTransfer);
+            
+            window.GameUtils.safeSetProperty('transfer-input', 'min', minTransfer);
+            window.GameUtils.safeSetProperty('transfer-input', 'max', maxTransfer);
+            window.GameUtils.safeSetProperty('transfer-input', 'value', minTransfer);
+
+            // Update slider labels using safe DOM access
+            const firstLabel = document.querySelector('.slider-labels span:first-child');
+            if (firstLabel) firstLabel.textContent = minTransfer;
+            window.GameUtils.safeUpdateElement('slider-max-label', 'textContent', maxTransfer);
+
+            // Update button text using safe DOM access
+            const useMinBtn = window.GameUtils.safeGetElement('use-minimum-btn', false);
+            if (useMinBtn) {
+                useMinBtn.textContent = `Use Minimum (${minTransfer} ${minTransfer === 1 ? 'army' : 'armies'})`;
+            }
+
+            // Update preview
+            window.updateTransferPreview();
+
+            // Show modal using safe style setting
+            window.GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'flex');
+        };
+
+        // Close transfer modal
+        window.closeTransferModal = function() {
+            window.GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'none');
+            
+            // Reset transfer state
+            window.transferState.sourceTerritory = null;
+            window.transferState.destinationTerritory = null;
+            window.transferState.maxTransfer = 0;
+            window.transferState.currentTransfer = 1;
+        };
+
+        // Adjust transfer armies with buttons
+        window.adjustTransferArmies = function(delta) {
+            const newValue = window.transferState.currentTransfer + delta;
+            const minTransfer = window.transferState.minTransfer || 1;
+            const maxTransfer = window.transferState.maxTransfer || 1;
+            
+            if (newValue >= minTransfer && newValue <= maxTransfer) {
+                window.transferState.currentTransfer = newValue;
+                
+                // Update both slider and input using safe DOM access
+                window.GameUtils.safeSetProperty('transfer-slider', 'value', newValue);
+                window.GameUtils.safeSetProperty('transfer-input', 'value', newValue);
+                
+                // Update preview
+                window.updateTransferPreview();
+            }
+        };
+
+        // Update transfer preview
+        window.updateTransferPreview = function() {
+            const transferAmount = window.transferState.currentTransfer;
+            const sourceTerr = window.riskUI.gameState.territories[window.transferState.sourceTerritory];
+            
+            if (!sourceTerr) return;
+
+            const sourceRemaining = sourceTerr.armies - transferAmount;
+            const destinationTotal = 1 + transferAmount; // Already has 1 from conquest
+
+            // Update preview display using safe DOM access
+            window.GameUtils.safeUpdateElement('preview-source-name', 'textContent', 
+                window.transferState.sourceTerritory.replace(/-/g, ' ').toUpperCase());
+            window.GameUtils.safeUpdateElement('preview-source-armies', 'textContent', `${sourceRemaining} armies remaining`);
+            
+            window.GameUtils.safeUpdateElement('preview-destination-name', 'textContent', 
+                window.transferState.destinationTerritory.replace(/-/g, ' ').toUpperCase());
+            window.GameUtils.safeUpdateElement('preview-destination-armies', 'textContent', `${destinationTotal} armies total`);
+
+            // Update button states
+            const minusBtn = document.querySelector('.transfer-number-input button:first-child');
+            const plusBtn = document.querySelector('.transfer-number-input button:last-child');
+            
+            minusBtn.disabled = transferAmount <= 1;
+            plusBtn.disabled = transferAmount >= window.transferState.maxTransfer;
+        };
+
+        // Cancel transfer (use minimum)
+        window.cancelTransfer = function() {
+            console.warn('🔄 Legacy cancelTransfer() called - using CombatUI system instead');
+            
+            try {
+                if (window.combatUI && window.combatUI.cancelTransfer) {
+                    console.log('📊 Using minimum transfer (1 army)');
+                    const result = window.combatUI.cancelTransfer();
+                    console.log('✅ Minimum transfer completed:', result);
+                    return result;
+                } else {
+                    console.warn('⚠️ CombatUI cancelTransfer not available, using fallback');
+                    
+                    // FALLBACK: Use window.confirmTransfer with 1 army
+                    if (typeof window.confirmTransfer === 'function') {
+                        // Set transfer amount to 1
+                        if (window.transferState) {
+                            window.transferState.currentTransfer = 1;
+                        }
+                        
+                        // Update input values if they exist
+                        const transferSlider = document.getElementById('transfer-slider');
+                        const transferInput = document.getElementById('transfer-input');
+                        
+                        if (transferSlider) transferSlider.value = 1;
+                        if (transferInput) transferInput.value = 1;
+                        
+                        // Use confirmTransfer with minimum armies
+                        return window.confirmTransfer();
+                    }
+                    
+                    // Hide modal if all else fails
+                    GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'none');
+                    console.error('❌ No method available to complete minimum transfer');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error during minimum transfer:', error);
+                // Hide modal even on error
+                GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'none');
+                return false;
+            }
+        };
+
+        // Unit transfer function for both legacy and new conquest systems
+        let transferInProgress = false;
+        window.confirmTransfer = function() {
+            if (transferInProgress) {
+                console.log('⏳ Transfer already in progress, ignoring duplicate call');
+                return false;
+            }
+            
+            transferInProgress = true;
+            console.warn('🔄 Legacy confirmTransfer() called - using CombatUI conquest system instead');
+            
+            try {
+                // Ensure we have valid transfer state
+                if (!window.transferState || !window.transferState.sourceTerritory || !window.transferState.destinationTerritory) {
+                    console.error('❌ Invalid transfer state - missing territory information');
+                    GameUtils.safeUpdateElement('transfer-error-message', 'textContent', 'Transfer error: Missing territory information');
+                    return false;
+                }
+                
+                // Get transfer amount
+                const transferAmount = parseInt(document.getElementById('transfer-input')?.value || 
+                                              document.getElementById('transfer-slider')?.value ||
+                                              window.transferState?.currentTransfer || 1);
+                
+                console.log('📊 Transfer amount:', transferAmount);
+                
+                // Validate transfer amount
+                if (transferAmount < 1 || isNaN(transferAmount)) {
+                    console.error('❌ Invalid transfer amount:', transferAmount);
+                    GameUtils.safeUpdateElement('transfer-error-message', 'textContent', 'Transfer error: Invalid army count');
+                    return false;
+                }
+                
+                // Execute transfer using CombatUI if available
+                if (window.combatUI && window.combatUI.completeConquest) {
+                    try {
+                        const result = window.combatUI.completeConquest(transferAmount);
+                        console.log('✅ Transfer completed, result:', result);
+                        
+                        // Hide the transfer modal regardless of result
+                        GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'none');
+                        
+                        return result;
+                    } catch (uiError) {
+                        console.error('❌ Error in CombatUI.completeConquest:', uiError);
+                        // Continue to fallback logic
+                    }
+                } else {
+                    console.warn('⚠️ CombatUI conquest system not available, using fallback');
+                }
+                
+                // ULTIMATE FALLBACK: Try CombatSystem directly if it exists
+                if (window.combatSystem && window.transferState) {
+                    try {
+                        console.log('🔄 Attempting CombatSystem direct transfer fallback');
+                        const result = window.combatSystem.completeConquest(transferAmount);
+                        if (result && result.success) {
+                            console.log('✅ Direct CombatSystem transfer successful');
+                            GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'none');
+                            return result;
+                        }
+                    } catch (csError) {
+                        console.error('❌ Error in CombatSystem direct transfer:', csError);
+                        // Continue to manual fallback
+                    }
+                }
+                
+                    // MANUAL FALLBACK: Transfer directly using game state
+                    const gameState = GameUtils.getGameState();
+                    if (!gameState || !gameState.territories) {
+                        console.error('❌ Game state not available for fallback transfer');
+                        return false;
+                    }
+                    
+                    const source = gameState.territories[window.transferState.sourceTerritory];
+                    const destination = gameState.territories[window.transferState.destinationTerritory];
+                    
+                    if (!source || !destination) {
+                        console.error('❌ Source or destination territory not found');
+                        return false;
+                    }
+                    
+                    // Check if transfer is valid
+                    if (source.armies <= transferAmount) {
+                        console.error('❌ Not enough armies in source territory');
+                        return false;
+                    }
+                    
+                    // Execute the transfer
+                    source.armies -= transferAmount;
+                    destination.armies = transferAmount;
+                    destination.owner = source.owner;
+                    
+                    console.log('✅ Fallback transfer completed successfully');
+                    
+                    // Hide the transfer modal
+                    GameUtils.safeSetStyle('unit-transfer-modal', 'display', 'none');
+                    
+                    return { success: true };
+            } catch (error) {
+                console.error('❌ Error during transfer:', error);
+                GameUtils.safeUpdateElement('transfer-error-message', 'textContent', 'Transfer error: ' + error.message);
+                return false;
+            } finally {
+                // Reset flag after a short delay to allow for next transfer
+                setTimeout(() => {
+                    transferInProgress = false;
+                }, 1000);
+            }
+        };
+
+        // REMOVED: Legacy territory ownership and transfer code - handled by CombatUI now
+
+        // Add input event listeners for real-time preview updates
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const attackerInput = document.getElementById('attacker-remaining');
+                const defenderInput = document.getElementById('defender-remaining');
+                
+                if (attackerInput) {
+                    attackerInput.addEventListener('input', window.updateBattlePreview);
+                }
+                if (defenderInput) {
+                    defenderInput.addEventListener('input', window.updateBattlePreview);
+                }
+
+                // Add transfer modal event listeners
+                const transferSlider = document.getElementById('transfer-slider');
+                const transferInput = document.getElementById('transfer-input');
+
+                if (transferSlider) {
+                    transferSlider.addEventListener('input', function() {
+                        const value = parseInt(this.value);
+                        window.transferState.currentTransfer = value;
+                        window.GameUtils.safeSetProperty('transfer-input', 'value', value);
+                        window.updateTransferPreview();
+                    });
+                }
+
+                if (transferInput) {
+                    transferInput.addEventListener('input', function() {
+                        const value = parseInt(this.value) || 1;
+                        const minTransfer = window.transferState.minTransfer || 1;
+                        const maxTransfer = window.transferState.maxTransfer || 1;
+                        
+                        if (value >= minTransfer && value <= maxTransfer) {
+                            window.transferState.currentTransfer = value;
+                            window.GameUtils.safeSetProperty('transfer-slider', 'value', value);
+                            window.updateTransferPreview();
+                        }
+                    });
+                }
+            }, 1000);
+        });
+
+        // Continent Selection and Map Highlighting System
+        window.continentState = {
+            selectedContinent: null,
+            continentData: {
+                'north-america': ['alaska', 'alberta', 'central-america', 'eastern-united-states', 'greenland', 'northwest-territory', 'ontario', 'quebec', 'western-united-states'],
+                'south-america': ['argentina', 'brazil', 'peru', 'venezuela'],
+                'europe': ['great-britain', 'iceland', 'northern-europe', 'scandinavia', 'southern-europe', 'ukraine', 'western-europe'],
+                'africa': ['congo', 'east-africa', 'egypt', 'madagascar', 'north-africa', 'south-africa'],
+                'asia': ['afghanistan', 'china', 'india', 'irkutsk', 'japan', 'kamchatka', 'middle-east', 'mongolia', 'siam', 'siberia', 'ural', 'yakutsk'],
+                'australia': ['eastern-australia', 'indonesia', 'new-guinea', 'western-australia']
+            }
+        };
+
+        /**
+         * Select and highlight a continent on the map
+         * @param {string} continentId - The continent identifier (e.g., 'north-america')
+         */
+        window.selectContinent = function(continentId) {
+            console.log('Highlighting continent:', continentId);
+            
+            // Clear previous highlighting
+            window.clearContinentSelection();
+            
+            // Update selected continent (for tracking purposes only)
+            window.continentState.selectedContinent = continentId;
+            
+            // Highlight territories on map only (no UI selection visual)
+            window.highlightContinentTerritories(continentId);
+            
+            // Update continent info display
+            window.updateContinentInfo(continentId);
+        };
+
+        /**
+         * Clear continent highlighting
+         */
+        window.clearContinentSelection = function() {
+            // Clear territory highlighting only
+            window.clearContinentHighlighting();
+        };
+
+        /**
+         * Highlight all territories belonging to a continent
+         * @param {string} continentId - The continent identifier
+         */
+        window.highlightContinentTerritories = function(continentId) {
+            const territories = window.continentState.continentData[continentId];
+            if (!territories) {
+                console.warn('No territories found for continent:', continentId);
+                return;
+            }
+            
+            territories.forEach(territoryId => {
+                const territoryElement = document.querySelector(`[data-territory="${territoryId}"]`) || 
+                                      document.querySelector(`#${territoryId}`) ||
+                                      document.querySelector(`[id*="${territoryId}"]`);
+                
+                if (territoryElement) {
+                    GameUtils.safeToggleClass(territoryElement, 'highlight-continent', true);
+                    // Add pulsing effect
+                    territoryElement.style.animation = 'pulse-continent 2s infinite';
+                } else {
+                    console.warn('Territory element not found:', territoryId);
+                }
+            });
+        };
+
+        /**
+         * Clear all continent territory highlighting
+         */
+        window.clearContinentHighlighting = function() {
+            // Remove continent highlighting from all territories
+            const highlightedTerritories = document.querySelectorAll('.highlight-continent');
+            highlightedTerritories.forEach(territory => {
+                GameUtils.safeToggleClass(territory, 'highlight-continent', false);
+                territory.style.animation = '';
+            });
+        };
+
+        /**
+         * Update continent information display
+         * @param {string} continentId - The continent identifier
+         */
+        window.updateContinentInfo = function(continentId) {
+            const gameState = GameUtils.getGameState();
+            if (!gameState) return;
+            
+            const territories = window.continentState.continentData[continentId];
+            if (!territories) return;
+            
+            let controlledCount = 0;
+            let totalTerritories = territories.length;
+            
+            // Count controlled territories (this would need to be connected to actual game state)
+            territories.forEach(territoryId => {
+                if (gameState.territories && gameState.territories[territoryId]) {
+                    const territory = gameState.territories[territoryId];
+                    if (territory.owner === gameState.currentPlayer) {
+                        controlledCount++;
+                    }
+                }
+            });
+            
+            // Update continent display (could be expanded to show detailed info)
+            console.log(`${continentId}: ${controlledCount}/${totalTerritories} territories controlled`);
+        };
+
+        /**
+         * Update continent control status display
+         */
+        window.updateContinentControlDisplay = function() {
+            const gameState = GameUtils.getGameState();
+            if (!gameState || !gameState.territories) return;
+            
+            Object.keys(window.continentState.continentData).forEach(continentId => {
+                const territories = window.continentState.continentData[continentId];
+                const continentElement = document.querySelector(`[data-continent="${continentId}"]`);
+                
+                if (!continentElement) return;
+                
+                let controlledCount = 0;
+                let currentPlayerControlsAll = true;
+                
+                territories.forEach(territoryId => {
+                    const territory = gameState.territories[territoryId];
+                    if (territory && territory.owner === gameState.currentPlayer) {
+                        controlledCount++;
+                    } else {
+                        currentPlayerControlsAll = false;
+                    }
+                });
+                
+                // Update visual state
+                if (currentPlayerControlsAll) {
+                    GameUtils.safeToggleClass(continentElement, 'controlled', true);
+                } else {
+                    GameUtils.safeToggleClass(continentElement, 'controlled', false);
+                }
+            });
+        };
+
+        /**
+         * Initialize continent highlighting system
+         */
+        window.initializeContinentSystem = function() {
+            console.log('Initializing continent highlighting system...');
+            
+            // Add double-click to clear highlighting
+            document.addEventListener('dblclick', function(event) {
+                if (!event.target.closest('.interactive-continent')) {
+                    window.clearContinentSelection();
+                    window.continentState.selectedContinent = null;
+                }
+            });
+            
+            // Add escape key to clear highlighting
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && window.continentState.selectedContinent) {
+                    window.clearContinentSelection();
+                    window.continentState.selectedContinent = null;
+                }
+            });
+            
+            // Update continent display periodically
+            setInterval(window.updateContinentControlDisplay, 2000);
+            
+            console.log('Continent highlighting system initialized');
+        };
+
+        /**
+         * Ensure all attack modal elements exist at page load
+         * This prevents elements from being created dynamically later
+         */
+        window.ensureAttackModalElements = function() {
+            console.log('🔄 Pre-initializing attack modal elements');
+            const attackModal = document.getElementById('attack-modal');
+            if (!attackModal) {
+                console.error('❌ Attack modal not found during pre-initialization');
+                return;
+            }
+            
+            // First make sure modal content exists
+            let modalContent = attackModal.querySelector('.modal-content');
+            if (!modalContent) {
+                console.log('📝 Creating attack modal content');
+                modalContent = document.createElement('div');
+                modalContent.className = 'modal-content attack-modal-content';
+                attackModal.appendChild(modalContent);
+            }
+            
+            // Create attack selection container if needed
+            let attackSelection = attackModal.querySelector('#attack-modal-selection');
+            if (!attackSelection) {
+                console.log('📝 Creating attack-modal-selection');
+                attackSelection = document.createElement('div');
+                attackSelection.id = 'attack-modal-selection';
+                attackSelection.className = 'attack-selection';
+                modalContent.appendChild(attackSelection);
+            }
+            
+            // Create territory containers if needed
+            let attackTerritory = attackModal.querySelector('.attack-territory');
+            if (!attackTerritory) {
+                console.log('📝 Creating attack-territory container');
+                attackTerritory = document.createElement('div');
+                attackTerritory.className = 'attack-territory';
+                
+                // Add label
+                const label = document.createElement('div');
+                label.className = 'territory-label';
+                label.textContent = '🗡️ Attacking From';
+                attackTerritory.appendChild(label);
+                
+                attackSelection.appendChild(attackTerritory);
+            }
+            
+            // Add separator if needed
+            let separator = attackSelection.querySelector('.attack-vs');
+            if (!separator) {
+                console.log('📝 Creating attack-vs separator');
+                separator = document.createElement('div');
+                separator.className = 'attack-vs';
+                separator.textContent = 'VS';
+                attackSelection.appendChild(separator);
+            }
+            
+            // Create defend territory container if needed
+            let defendTerritory = attackModal.querySelector('.defend-territory');
+            if (!defendTerritory) {
+                console.log('📝 Creating defend-territory container');
+                defendTerritory = document.createElement('div');
+                defendTerritory.className = 'defend-territory';
+                
+                // Add label
+                const label = document.createElement('div');
+                label.className = 'territory-label';
+                label.textContent = '🛡️ Defending';
+                defendTerritory.appendChild(label);
+                
+                attackSelection.appendChild(defendTerritory);
+            }
+            
+            // Create critical territory selection elements
+            const criticalElements = [
+                { id: 'attack-modal-attacking-name', parent: attackTerritory, className: 'territory-name', text: '-' },
+                { id: 'attack-modal-attacking-armies', parent: attackTerritory, className: 'territory-armies', text: '0 armies' },
+                { id: 'attack-modal-defending-name', parent: defendTerritory, className: 'territory-name', text: 'Select target' },
+                { id: 'attack-modal-defending-armies', parent: defendTerritory, className: 'territory-armies', text: '0 armies' }
+            ];
+            
+            criticalElements.forEach(config => {
+                if (!document.getElementById(config.id)) {
+                    console.log(`📝 Creating critical element: ${config.id}`);
+                    const element = document.createElement('div');
+                    element.id = config.id;
+                    element.className = config.className;
+                    element.textContent = config.text;
+                    config.parent.appendChild(element);
+                }
+            });
+            
+            console.log('✅ Pre-initialization of attack modal complete');
+        };
+        
+        // Initialize continent system and other features when game loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // PRE-INITIALIZE ATTACK MODAL ELEMENTS
+            // This needs to run as early as possible to ensure DOM is ready
+            window.ensureAttackModalElements();
+            
+            setTimeout(function() {
+                // Initialize continent system (DirectCombat is handled elsewhere)
+                window.initializeContinentSystem();
+                
+                // Start monitoring reinforcement state
+                setInterval(window.monitorReinforcementState, 1000);
+                
+                // Initialize phase display
+                GameUtils.safeUpdatePhaseDisplay();
+                
+                // Add territory click listeners for attack phase
+                setTimeout(function() {
+                    const territories = document.querySelectorAll('.territory');
+                    territories.forEach(territory => {
+                        territory.addEventListener('click', function() {
+                            const territoryId = this.id;
+                            if (territoryId) {
+                                // Use the new unified territory click handler
+                                window.handleTerritoryClick(territoryId);
+                            }
+                        });
+                    });
+                }, 2000);
+            }, 1000);
+            
+            // Update attack panel visibility when phase changes
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                        window.updateAttackPanelVisibility();
+                    }
+                });
+            });
+            
+            // Observe phase changes
+            setTimeout(() => {
+                const phaseIndicator = document.getElementById('phase-name');
+                if (phaseIndicator) {
+                    observer.observe(phaseIndicator, { 
+                        childList: true, 
+                        characterData: true, 
+                        subtree: true 
+                    });
+                }
+            }, 2000);
+        });
+
+        // Backward compatibility shims for legacy code
+        window.handleTerritoryClickForAttack = function(territoryId) {
+            console.warn('⚠️  handleTerritoryClickForAttack is deprecated. Using new handleTerritoryClick.');
+            if (typeof window.handleTerritoryClick === 'function') {
+                return window.handleTerritoryClick(territoryId);
+            } else {
+                console.error('❌ New combat system not initialized');
+            }
+        };
+    </script>
+</body>
+</html>
