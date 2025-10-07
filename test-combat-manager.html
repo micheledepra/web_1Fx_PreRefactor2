@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CombatManager Test Suite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .console-output {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        .console-output .pass {
+            color: #4ec9b0;
+        }
+        
+        .console-output .fail {
+            color: #f48771;
+        }
+        
+        .console-output .info {
+            color: #569cd6;
+        }
+        
+        .console-output .header {
+            color: #dcdcaa;
+            font-weight: bold;
+        }
+        
+        button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        
+        button:hover {
+            background-color: #005a9e;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .demo-section {
+            margin-top: 30px;
+        }
+        
+        .demo-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-control {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .demo-control label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .demo-control input,
+        .demo-control select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .demo-output {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .demo-output.error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        
+        .demo-output pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status-badge.success {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .status-badge.error {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>CombatManager Test Suite</h1>
+    
+    <div class="test-container">
+        <h2>Automated Tests</h2>
+        <p>Run comprehensive automated tests to verify CombatManager functionality.</p>
+        <button id="runTestsBtn" onclick="runTests()">Run All Tests</button>
+        <button onclick="clearConsole()">Clear Console</button>
+        <div id="consoleOutput" class="console-output">
+            Console output will appear here...
+        </div>
+    </div>
+    
+    <div class="test-container demo-section">
+        <h2>Interactive Demo</h2>
+        <p>Test CombatManager methods interactively.</p>
+        
+        <div class="demo-controls">
+            <div class="demo-control">
+                <label>Attacking Territory:</label>
+                <select id="attackingTerritory">
+                    <option value="Alaska">Alaska (5 armies, Player 1)</option>
+                    <option value="NorthwestTerritory">NW Territory (2 armies, Player 1)</option>
+                    <option value="Alberta">Alberta (1 army, Player 1)</option>
+                </select>
+            </div>
+            
+            <div class="demo-control">
+                <label>Defending Territory:</label>
+                <select id="defendingTerritory">
+                    <option value="Kamchatka">Kamchatka (3 armies, Player 2)</option>
+                    <option value="NorthwestTerritory">NW Territory (2 armies, Player 1)</option>
+                    <option value="Alberta">Alberta (1 army, Player 1)</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="demoInitiateCombat()">Initiate Combat</button>
+        <button onclick="demoGetBattleOptions()">Get Battle Options</button>
+        
+        <div class="demo-controls" style="margin-top: 20px;">
+            <div class="demo-control">
+                <label>Attacker Remaining Armies:</label>
+                <input type="number" id="attackerRemaining" value="4" min="1">
+            </div>
+            
+            <div class="demo-control">
+                <label>Defender Remaining Armies:</label>
+                <input type="number" id="defenderRemaining" value="2" min="0">
+            </div>
+        </div>
+        
+        <button onclick="demoProcessBattle()">Process Battle</button>
+        <button onclick="demoOccupyTerritory()">Occupy Territory (3 armies)</button>
+        <button onclick="demoEndCombat()">End Combat</button>
+        <button onclick="demoGetAttackableTargets()">Get Attackable Targets</button>
+        
+        <div id="demoOutput"></div>
+    </div>
+    
+    <!-- Load CombatManager -->
+    <script src="js/CombatManager.js"></script>
+    <script src="js/test-combat-manager.js"></script>
+    
+    <script>
+        // Console capture
+        const consoleDiv = document.getElementById('consoleOutput');
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn
+        };
+        
+        function clearConsole() {
+            consoleDiv.innerHTML = 'Console cleared...\n';
+        }
+        
+        function appendToConsole(message, type = 'log') {
+            let className = '';
+            if (message.includes('✅')) className = 'pass';
+            else if (message.includes('❌')) className = 'fail';
+            else if (message.includes('---') || message.includes('===')) className = 'header';
+            else if (type === 'error') className = 'fail';
+            else if (type === 'info') className = 'info';
+            
+            const line = document.createElement('div');
+            if (className) line.className = className;
+            line.textContent = message;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        // Override console methods
+        console.log = function(...args) {
+            const message = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+            appendToConsole(message, 'log');
+            originalConsole.log.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            const message = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+            appendToConsole(message, 'error');
+            originalConsole.error.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            const message = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+            appendToConsole(message, 'warn');
+            originalConsole.warn.apply(console, args);
+        };
+        
+        // Run tests
+        function runTests() {
+            clearConsole();
+            console.log('Starting test suite...\n');
+            runCombatManagerTests();
+        }
+        
+        // Demo functions
+        let demoGameState = null;
+        let demoCombatManager = null;
+        
+        function initDemo() {
+            demoGameState = createMockGameState();
+            demoCombatManager = new CombatManager(demoGameState);
+        }
+        
+        function showDemoOutput(result, isError = false) {
+            const output = document.getElementById('demoOutput');
+            output.className = 'demo-output' + (isError ? ' error' : '');
+            output.innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+        }
+        
+        function demoInitiateCombat() {
+            if (!demoCombatManager) initDemo();
+            
+            const attacker = document.getElementById('attackingTerritory').value;
+            const defender = document.getElementById('defendingTerritory').value;
+            
+            const result = demoCombatManager.initiateCombat(attacker, defender);
+            showDemoOutput(result, !result.success);
+        }
+        
+        function demoGetBattleOptions() {
+            if (!demoCombatManager) {
+                showDemoOutput({ error: 'Please initiate combat first' }, true);
+                return;
+            }
+            
+            const result = demoCombatManager.getBattleOptions();
+            showDemoOutput(result || { error: 'No active combat' }, !result);
+        }
+        
+        function demoProcessBattle() {
+            if (!demoCombatManager) {
+                showDemoOutput({ error: 'Please initiate combat first' }, true);
+                return;
+            }
+            
+            const attackerRemaining = parseInt(document.getElementById('attackerRemaining').value);
+            const defenderRemaining = parseInt(document.getElementById('defenderRemaining').value);
+            
+            const result = demoCombatManager.processBattleResult({
+                attackerRemainingArmies: attackerRemaining,
+                defenderRemainingArmies: defenderRemaining
+            });
+            
+            showDemoOutput(result, !result.success);
+        }
+        
+        function demoOccupyTerritory() {
+            if (!demoCombatManager) {
+                showDemoOutput({ error: 'Please initiate combat first' }, true);
+                return;
+            }
+            
+            const result = demoCombatManager.occupyTerritory(3);
+            showDemoOutput(result, !result.success);
+        }
+        
+        function demoEndCombat() {
+            if (!demoCombatManager) {
+                showDemoOutput({ error: 'No combat to end' }, true);
+                return;
+            }
+            
+            const result = demoCombatManager.endCombat();
+            showDemoOutput(result, !result.success);
+        }
+        
+        function demoGetAttackableTargets() {
+            if (!demoGameState) initDemo();
+            
+            const territory = document.getElementById('attackingTerritory').value;
+            const result = demoCombatManager.getAttackableTargets(territory);
+            
+            showDemoOutput({
+                territory: territory,
+                attackableTargets: result
+            });
+        }
+        
+        // Initialize demo on load
+        window.addEventListener('load', () => {
+            initDemo();
+            console.log('Page loaded. Ready to run tests.');
+        });
+    </script>
+</body>
+</html>
