@@ -194,9 +194,17 @@ function testAttackValidation() {
     assert(validation.error.includes('at least 2 armies'), 'Insufficient armies error message');
     
     // Test non-adjacent territories
-    validation = manager.validateAttack('Alaska', 'Alberta');
+    // Alaska and Kamchatka are actually neighbors, but let's test with truly non-adjacent ones
+    // We need to add a non-adjacent enemy territory to our mock
+    gameState.territories['Brazil'] = {
+        id: 'Brazil',
+        owner: 'Player 2',
+        armies: 3,
+        neighbors: ['Venezuela', 'Peru']
+    };
+    validation = manager.validateAttack('Alaska', 'Brazil');
     assert(validation.valid === false, 'Non-adjacent territories fail validation');
-    assert(validation.error.includes('adjacent'), 'Non-adjacent error message');
+    assert(validation.error && validation.error.includes('adjacent'), 'Non-adjacent error message');
     
     // Test same owner
     validation = manager.validateAttack('Alaska', 'NorthwestTerritory');
@@ -318,7 +326,7 @@ function testBattleResultValidation() {
         defenderRemainingArmies: 3
     });
     assert(validation.valid === false, 'No casualties fails validation');
-    assert(validation.error.includes('at least one side must lose'), 'No casualties error message');
+    assert(validation.error && validation.error.toLowerCase().includes('at least one side must lose'), 'No casualties error message');
     
     // Test too many losses (>2 per round)
     validation = manager.validateBattleResult({
